@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -64,71 +63,4 @@ Numbers are just their binary equivalents.</p><br>
         <img src="./images3821/10.webp" alt="">
 </main>
   </body>
-=======
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>CS Notes</title>
-  </head>
-  <body>
-    <main>
-        <p><strong>NOTATION</strong><br>
-if a number has <code>D</code> as a suffix, it is <code>denary</code>, <code>ex: 382D</code>
-if a number has <code>B or 0b</code> as a suffix or prefix respectively, it is <code>binary</code>, <code>ex: 1010B, 0b1001</code>
-if a number has <code>H or 0x</code> as a suffix or prefix respectively, it is <code>hexadecimal</code>, <code>ex: 1AB5H, 0x1AB5</code><br>
-<strong>BINARY: SIGNED AND UNSIGNED</strong><br>
-Unlike unsigned binary where you can just add 0s to the front to extend the amount of bits, you can't in signed binary. <code>To do a bit extension of a signed value in binary, you flip 1s to 0s, and vice versa</code></p>
-<p><code>To convert a positive signed bit to a negative one and vice versa, flip all 1s to 0s and add a 1.</code></p>
-        <img src="./images3821/1.webp" alt="">
-        <img src="./images3821/2.webp" alt="">
-        <img src="./images3821/3.webp" alt="">
-        <img src="./images3821/4.webp" alt="">
-        <img src="./images3821/5.webp" alt="">
-        <img src="./images3821/6.webp" alt=""><br>
-        <p><strong>HEXADECIMAL</strong><br>
-Every 4 bit binary can be mapped to a hexadecimal letter
-1010: A
-1011: B
-1100: C
-1101: D
-1110: E
-1111: F
-increment by 1 for each letter
-Numbers are just their binary equivalents.</p><br>
-<p><code>Bit-Wise Operation</code>: Operations between binary numbers</p>
-<p><code>Overflow</code>: When calculating two signed binary numbers causes the result to lose it&#39;s integrity due to the MSB not having the proper sign. Is <code>positive</code> when the overflow causes the result to be positive, and <code>negative</code> when the overflow causes the result to be negative.</p>
-<p><code>Logical Shift Left</code>: Move every bit of the original number to the left, and patch zeros at the end, <code>If you shift left n bits, to a binary number b, the result is b*2^n</code></p>
-<p><code>Logical Shift Right</code>: Shift every bit to the right, and discard the LSB, and patch zeros at the beginning. <code>Opposite of Logical Shift Left</code></p>
-<p><code>Arithmetic Shift Right</code>: Similar to logical shift right, but MSB is padded with the original number&#39;s MSB, <code>ex: original number MSB is 1, so pad 1s. If original number MSB is 0, same as logical shift right.</code></p>
-<p><code>Logical Operations</code>: <code>and, or, xor</code>: Allign the two binary numbers, and applying logical operations. Ex: Given <code>1010B</code> and <code>0101B</code>, applying the <code>xor</code> or the <code>or</code> operator will give <code>1111B</code>, while the <code>and</code> operator will give <code>0000B</code></p>
-<p>The Arithmatic Logic Unit (ALU) can only do addition subtraction, and logical operations.</p>
-<p><code>RAM (Random Access Memory)</code> is a large array or list of bytes. They are <code>byte-addressed</code> which means each byte in the array/list has it's own address. </p>
-<p>CPU sends an address to RAM through the <code>address bus</code> and ram will send the data stored at that address back through the <code>data bus</code></p>
-<p>Buses are just groups of wires where each wire transfers 1 bit. Usually a bus is a group of 8 wires so it can transfer one byte at a time.</p>
-<p><code>abstraction</code> is the process of simplifying processes in computer science so you can focus on the main task.</p><br>
-<p><strong>C</strong><br></p>
-<p><code>C is not an object oriented language</code>, so public and private attribbutes dont exist, the primative data types in C are <code>char, short int, int , long int, float, and double</code>. </p>
-<p><code>char</code> is actually an integer data type because it stores the ASCII code of the character instead of the character itself.</p>
-<p>Integer data types are signed in C.</p>
-<p><code>&</code> and <code>|</code> are bitwise operators, while <code>&amp;&amp;</code> and <code>||</code> are logical operators.</p><br>
-<strong>POINTERS</strong><br>
-<p>C allows you to explicitly call addresses from memory, these are called pointers. Pointers point to  a variable, and have a type related to the type they are pointing to. </p>
-<p>To find the address of a variable, put the <code>address of (&amp;)</code> operator infront of it.</p>
-<p>To make a pointer, put a <code>*</code> after the data type&#39;s name.</p>
-<p>To find the value stored at the address of a pointer, you <code>derefrence</code> it by using the <code>*</code> operator.</p>
-<p>Pointers will always reference the lowest address. Ex: If a variable takes up 0x1000, 0x1001, 0x1002, and 0x1003. The address and pointer of the variable would be 0x1000. Variables take up multiple addresses if they take up multiple bytes, since each byte has it&#39;s own address.</p>
-<p><code>Little Endian</code>: Let the lowest byte occupy the lowest address.
-<code>Big Endian</code>: Let the lowest byte occupy the highest address.</p>
-<p>The name of an array is also the address of it's first element. <code>arrayname == &amp;arrayname[0]</code></p>
-<p><code>Offset</code>: Adding or subtracting a number from a pointer to gain a new address.</p>
-<p>For a pointer of <code>p</code> of type <code>x</code> and integer <code>i</code>, when you do an offset of <code>p</code> by <code>i</code>, the new address will usually be <code>i*sizeof(x)</code> bytes higher than <code>p</code>.</p>
-<p>In C strings need a <code>null terminator</code>, which is a char whose ASCII value is 0.</p>
-        <img src="./images3821/7.webp" alt="">
-        <img src="./images3821/8.webp" alt="">
-        <img src="./images3821/9.webp" alt="">
-        <img src="./images3821/10.webp" alt="">
-</main>
-  </body>
->>>>>>> 2cfcdfb81e5dda950c88674e0f893d4bfd6d5740
 </html>
