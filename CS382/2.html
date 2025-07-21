@@ -6,7 +6,78 @@
   </head>
   <body>
     <main>
-        <p>This is CS382 chapter 2</p>
-    <main>
+      <p>Instructions follow the following format
+<code>Label: Mnemonic     Operand1, Operand2, Operand3 //Comments</code>
+Label: the address the instruction is sent to.
+Mnemonic: the operation/instruction
+Operand1/2/3: Numbers(called immediate), and/or registers</p>
+<p>In ARMv8, the instruction set architecture taught in this course, there are 32 general purpose registers which each can store 64 bits, and one of them is a zero register whose value can&#39;t be changed.</p>
+      <p><code>Load Instructions (LDR)</code> are used to move data from memory to registers. The two most common versions of LDR are <code>LDR Wt, [base,simm9]</code>, and <code>LDR Xt, [base,simm9]</code>
+Wt loads a word, while Xt loads a doubleword. Xt is the destination registers, while base is a register which stores the <code>base address</code> in memory, <code>simm9</code> stands for immediate 9-bit integer, which is used as an offset(see chap 1) from the base address.</p>
+<p>In the LDR <code>LDR[S]{H|B} Wt, [base, simm9]</code>, the [S] is optional and extends the data to match the destination register, if not used it will zero extend the data. The {H|B} and tells the machine to move a half-word or a byte. </p>
+<p>Moving data from memory to registers is to load data. Moving data from registers to memory is to store data.</p>
+<p>The Mnemonic to store data is <code>STR</code>.</p>
+<p>arrays are written as <code>arr</code></p>
+<p>The <code>MOV</code> instruction allows you to set an immediate value to a register. Despite the name, its a copy instruction rather than a moving one. Data does not get moved out of the source.</p>
+<p>The mnemonics for addition and subtraciton are <code>ADD</code> and <code>SUB</code> respectively.</p>
+<p>Load operands from memory to registers -&gt; use <code>ADD</code> or <code>SUB</code> to perform calculation, ALU sends result to destination register, store result from register to memory.</p>
+<p>Multiplication and Division instructions are <code>MUL</code>, and then <code>SDIV</code> for signed intiger division, and <code>UDIV</code> for unsisgned integer division.</p>
+<p><code>AND</code>, <code>ORR</code>, and <code>EOR</code>, are the bit-wise and, or, and xor operations respecitvely.</p>
+<p><code>LSR</code>, <code>LSL</code>, and <code>ASR</code>, are Logical/Arithmatic Shift Right/Left</p>
+<p>The <code>program counter(PC)</code> is a 64 bit register that the CPU stores the address of the next instruction to be executed in.</p>
+<p>Branching is the act of not linearly progressing through the program, which essentially &quot;modifies&quot; the PC. To branch the <code>B</code> instruction can be used. The syntax is <code>B target</code> where target is the address of the instruction you want to go to.</p>
+<p>To find the address of an instruction as it runs, you use a label. (See top of this chap of notes)</p>
+<p><code>BR</code> is another instruction that can be used to brand, and is used when the address has already been stored in another register.</p>
+<p>Conditional branching is checking if a register is 0, and if it not then go to the target register. This instruction is called <code>CBNZ</code> CBNZ stands for Conditional Branch if Not Zero, <code>CBZ</code> is an alternate form where it means to Conditional Branch if Zero.</p>
+<p>The <code>CMP</code> is to compare 2 operands, the <code>B.NE</code> instruction stands for Branch if Not Equal.</p>
+<p><code>CPSR</code>: current program status register, a 32 bit register where each bit is used individually, and the highest four bits each have their own condiiton code.
+<code>31 | N | Negative
+30 | Z | Zero
+29 | C | Carry
+28 | V | Overflow
+0-27 | Other</code></p>
+<p>When a condition code has a value of 1, it is set, when it doesn&#39;t it&#39;s clear.</p>
+<p>The only instruction we know so far that changes condition codes is <code>CMP</code>, to change condition codes with arithmatic instructions we must use <code>ADDS</code>, <code>SUBS</code>, and <code>ANDS</code></p>
+        <img src="./images3822/1.png" alt="">
+        <img src="./images3822/2.png" alt="">
+        <p>Loops are branching backwards instead of forwards</p>
+<p><code>.text</code> stores assembly code and read only data
+<code>data</code> stores global variables
+<code>.bss</code> stores unitialized variables</p>
+<p>start of virtal memory space  is <code>heap</code>, end is <code>stack</code>. Each procedure is a frame/block.</p>
+<p>Stack is same as CS284</p>
+<p>Frames are not created automatically, we have to manually allocate the frame area on a stack.</p>
+<p>The <code>BL</code> instruction is the best way to end a procedure since it branches to the label and links the return address.</p>
+<p>BL pushes the address of the following instruction, then copy the address labeled by its operand to the <code>program counter(PC)</code>.</p>
+<p>The quickest way to pass arguments is through registers. By convention registers <code>x0</code> to <code>x7</code> are for passing arguments. </p>
+<p>Usually registers are not enough to store all the data for procedures though, so thats why frames are created.</p>
+<p>At the top of the stack there is a pointer which points to the address of the current lowest byte of the stack called the <code>stack pointer</code>, which is inside register <code>SP</code>.</p>
+<p>The <code>frame pointer</code> is stored in <code>X29</code> and is referred to as <code>FP</code>. The difference between FP and SP is the procedure frame.</p>
+<p>Because they are not automatically changed during BL, we must do it ourselves.</p>
+<p><code>leaf procedures</code> are ones that don&#39;t call any other procedures</p>
+<p><code>non-leaf procedures</code> are ones that call other procedures</p>
+<p>To resolve register conflicts, follow below</p>
+<p>The callee needs to store <code>callee saved registers</code> and SP on stack, including x19-x30 and LDR from memory to registers before returning.</p>
+<p>The caller needs to save <code>caller saved registers</code> on stack.</p>
+        <img src="./images3822/3.png" alt="">
+<p>To write procedures follow the following instructions</p>
+<ol>
+<li><p>calculate procedure frame size and subtract from SP <code>SUB SP, SP, frame_size;</code></p>
+</li>
+<li><p>Store registers on stack, for non-leaf store X30, and if a procedure changes any other registers store those as well</p>
+</li>
+<li><p>Do the procedure</p>
+</li>
+<li><p>Put return value in X0</p>
+</li>
+<li><p>Restore stored registers in step 2</p>
+</li>
+<li><p>Add frame_size back to SP</p>
+</li>
+<li><p><code>RET</code> back to caller.</p>
+</li>
+</ol>
+
+<main>
   </body>
 </html>
