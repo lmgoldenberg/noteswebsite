@@ -6,7 +6,66 @@
   </head>
   <body>
     <main>
-        <p>This is CS382 chapter 3</p>
-    <main>
+        <h1 id="microprocessor-design">Microprocessor Design</h1>
+<p>Made up of registers and the arithmetic logic unit (ALU)
+is able to store data temporarily and perform arithmetic calculations</p>
+<h2 id="3-1-logic-gates">3.1 Logic Gates</h2>
+<p>4 logic gates: and, or, xor/exclusive or, not</p>
+<p>the delay between the change in inputs and the result becoming <code>1</code> is the <strong>rising delay</strong></p>
+<p>the delay between  the change in inputs and the output becoming <code>0</code> is the <strong>falling delay</strong></p>
+        <img src="./images3823/1.png" alt="">
+        <img src="./images3823/2.png" alt="">
+        <h3 id="3-1-2-combinational-logic">3.1.2 Combinational Logic</h3>
+<p><strong>Combinational logic</strong> is when logic gates are combined in one direction with no loops</p>
+<p>Checking if two different bits are equal is easy, however to check if two larger data types (ex: double words) are equal, you must use <strong>buses</strong> in order to easily transfer data from one input into multiple logic gates that check each bit individually. </p>
+<p>To select which input you want to use as an output, use a <strong>multiplexer (MUX)</strong>.
+To make a bit multiplexer, there must be 3 inputs, <code>a</code>, <code>b</code>, and <code>s</code> which is the <strong>control signal</strong></p>
+<p>The control signal is a switch that controls which input is selected between the two. 
+When the control signal is <code>1</code> the signal is <strong>asserted/set</strong>
+When the control signal is  <code>0</code> the signal is <strong>deasserted/clear</strong></p>
+<p>To choose between multiple inputs, you need a <strong>N-Way multiplexer</strong>, where N is the amount of inputs you are choosing between.</p>
+<p>To figure out how may control signals you need for a multiplexer, use <code>S = round_up(log_2 N)</code>, easy way is how many bits you need to represent your number of choices in binary.</p>
+<p>Performing arithmetic uses combinational logic.</p>
+<p>To add 2 bits, there must be 2 inputs <code>x</code> and <code>y</code>, and as well as a <strong>carry-in flag</strong> <code>cin</code>.
+The output will also require a <strong>carry-out flag</strong> <code>cout</code></p>
+<p>This is effectively allowing you to add up to 3 numbers, truth table attached below. This is important when adding larger values.</p>
+<p>The smallest carry out flag will usually be <code>0</code>, and the largest carry-out flag will be sent to the CSPR&#39;s carry flag.</p>
+<img src="./images3823/3.png" alt="">
+<h3 id="3-1-3-sequential-logic">3.1.3 Sequential Logic</h3>
+<p>Used to store data</p>
+<p>A <strong>bistable element</strong> does not have any cycles and has two outputs, <code>p</code> and <code>q</code>, and an input <code>in</code>.</p>
+<p>When <code>in</code> goes from <code>0</code> to  <code>1</code> then <code>0</code> shortly after, both <code>p</code> and <code>q</code> take a small delay to respond, and then shortly change back to their original state. This is combinational logic</p>
+<p>To make sure that <code>p</code> and <code>q</code> save their results from <code>in</code> being turned in, you must add a loop between <code>q</code> and the wire of <code>in</code>. This changes the logic from combinational to sequential. </p>
+<p>The reason why this works is because when you set <code>q</code> to <code>1</code> and <code>p</code> to <code>0</code> using <code>in</code>, <code>q</code> will send the value back to the wire of <code>in</code>, this will cause a loop where <code>in</code> is powering <code>p</code> and <code>q</code>, and <code>q</code> is powering the wire of <code>in</code> which is connected to <code>p</code> and <code>q</code>. See attached for more detail.</p>
+<p>Sequential logic has a higher delay than combinational logic, this delay is called <strong>propogation delay</strong>.</p>
+<p>A flaw with the bistable element is that it is impossible to switch the outputs back to their original state.</p>
+<img src="./images3823/4.png" alt="">
+<p><strong>Set-Reset latches (SR latch</strong> are a type of circuit that allows you to change the output back to it&#39;s original state. </p>
+<p>There are 2 inputs, <code>S(set)</code>, <code>R(reset)</code>, and 2 outputs <code>Q+</code> and <code>Q-</code>.</p>
+<p><code>Q+</code> and <code>Q-</code> will always have opposite values.</p>
+<p>Setting <code>S</code> to <code>1</code>, then <code>0</code> shortly after will cause the output <code>Q+</code> to change to <code>1</code>.</p>
+<p>To change <code>Q+</code> back to <code>0</code>, change <code>R</code> to <code>1</code> then back to <code>0</code>. </p>
+<p>SR latches have 4 possible states. (See truth table attached)
+Setting: make <code>S</code> <code>1</code>, causing <code>Q+</code> to become <code>1</code>
+Resetting: make <code>R</code> <code>1</code>, causing <code>Q+</code> to revert to <code>0</code>)
+Latched/Stored: The input of <code>S</code> or <code>R</code> are both <code>0</code>, and the values of <code>Q</code> and <code>R</code> depend on the previous state.
+Metastable: Both <code>S</code> and <code>R</code> are <code>1</code>, causing an error.</p>
+<p>The truth table for an SR latch is written using <code>q</code> to determine the value of <code>Q+</code> and <code>!q</code> is used to determine the value of <code>Q-</code></p>
+<p>The SR latch is only good for sending 1 bit, and not actual data. This is because it is hard to sync multiple of them when trying to handle larger data types.</p>
+<img src="./images3823/5.png" alt="">
+<img src="./images3823/6.png" alt="">
+<p>The <strong>Data Latch (D Latch)</strong> solves the two flaws of the SR latch</p>
+<ol>
+<li><code>S</code> and <code>R</code> are unable to store actial data</li>
+<li>When there are many SR latches, it is difficult to synchronize them.</li>
+</ol>
+<p>The D latch introduces a clock <code>C</code>, which ticks by the slowest propogation speed in the circuit. <code>C</code> controls when input data <code>D</code> can change output <code>Q+</code>. When <code>C</code> is active, the D latch is <strong>latching</strong> and <code>Q+</code> will change it&#39;s data according to <code>D</code>. When <code>C</code> is inactive, the D latch is <strong>storing</strong>. When storing, as long as <code>C</code> is inactive, <code>Q+</code> will not change regardless of <code>D</code>.</p>
+<img src="./images3823/7.png" alt="">
+<img src="./images3823/8.png" alt="">
+<p>An issue with D latches is that the value changes every time <code>C</code> is active, which makes it unable to truly store data. To combat this, <strong>flip-flops or edge-triggered latches (FF latches for notes)</strong> are used.</p>
+<p>FF latches only change when <code>C</code> is on the rising edge or it is being turned on, and won&#39;t respond to anything else. To measure if the <code>C</code> is on it&#39;s rising edge, three <code>not</code> gates leaving the <code>C</code> are connected to an <code>and</code> gate, and the <code>C</code> is directly connected to the other input of the and gate. The <code>and</code> gate is called the <code>Trigger (T)</code>.  The reason why this works is because there is an extremely small amount of delay between an input and a result, so the three <code>not</code> gates take advantage of that delay to capture the rising edge of <code>C</code>. Besides that the FF latch works very similarly to the D latch.</p>
+<img src="./images3823/9.png" alt="">
+
+</main>
   </body>
 </html>
