@@ -65,6 +65,47 @@ Metastable: Both <code>S</code> and <code>R</code> are <code>1</code>, causing a
 <p>An issue with D latches is that the value changes every time <code>C</code> is active, which makes it unable to truly store data. To combat this, <strong>flip-flops or edge-triggered latches (FF latches for notes)</strong> are used.</p>
 <p>FF latches only change when <code>C</code> is on the rising edge or it is being turned on, and won&#39;t respond to anything else. To measure if the <code>C</code> is on it&#39;s rising edge, three <code>not</code> gates leaving the <code>C</code> are connected to an <code>and</code> gate, and the <code>C</code> is directly connected to the other input of the and gate. The <code>and</code> gate is called the <code>Trigger (T)</code>.  The reason why this works is because there is an extremely small amount of delay between an input and a result, so the three <code>not</code> gates take advantage of that delay to capture the rising edge of <code>C</code>. Besides that the FF latch works very similarly to the D latch.</p>
 <img src="./images3823/9.png" alt="">
+<p>A register is a group of flipflop circuits where each stores one bit. (Same registers as assembly)</p>
+<p>All of the flipflops are controlled by the same clock.</p>
+<p>In assembly, we have 32 general purpose registers all controlled by one clock that make one <strong>register file</strong> (see image for what a register file looks like)</p>
+<p>Each register file has 2 <strong>read ports</strong> and 1 <strong>write port</strong>. 
+The write port has three inputs. <code>RegDataW</code> for the actual data input, <code>WriteReg</code> for where to write the data, and <code>RegWrite</code> which will determine if the data should be written or not.</p>
+<p>The read ports have two register numbers <code>ReadReg1</code> and <code>ReadReg2</code> are selectors for two different multiplexers which, then sends data to <code>RegData1</code> and <code>RegData2</code> respectively.</p>
+<p>Writing Data is sequential because it uses a clock. Reading data is combinational because of the multiplexers.</p>
+<img src="./images3823/10.png" alt="">
+<img src="./images3823/11.png" alt="">
+<p>Random Access Memory (RAM) aka memory uses sequential logic to store data. RAM has three buses, control, data, and address. Unlike the other two busses which are <strong>unidirectional</strong> (only 1 way the input can move), the data bus is <strong>bidirectional</strong>, which means it can only send <em>or</em> read data, not both simultaneously. The address bus will contain the memory address. The data bus will contain the data either to send or read based on the control bus. The control bus in this course will have a width of two bits and will indicate whether to read or write data using the data bus.</p>
+<p>For more info on RAM check out <a href="./1.html">chapter 1</a>'s RAM section.</p>
+<img src="./images3823/12.png" alt="">
+<h2 id="3-2-assembly-machine-code">3.2 Assembly --&gt; Machine Code</h2>
+<p><strong>encoding</strong> is the process of turning assembly into binary.</p>
+<p>All ARMv8 encodings (not mandatory): <a href="https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions">https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions</a></p>
+<p>Each arm assembly instruction has 4 bytes (32 bits), and about 2 fields. The leading bits are <strong>opcode</strong> which is used to determine the mnemonic/instruction. The rest of the bits are used for operands such as read/write numbers, and addresses.</p>
+<h3 id="3-1-2-arithmetic-and-logical-instructions">3.1.2 Arithmetic and Logical instructions</h3>
+<p>There is some patterns to the opcode in instructions, such as if the 30th bit is active, then subtraction will occur, and addition otherwise, and the 29th bit is used to determine whether or not to select condition codes.</p>
+<p>When handling registers, bits 15--&gt;10 will always be <code>111000</code> for this course.</p>
+<img src="./images3823/13.png" alt="">
+<p>When handing instructions with immedietes instead of registers, bits 20--&gt;10 are now used to represent the immediate/number. Besides that handling immediatesis near identical to handling registers.</p>
+<p>Do note that the same instructions have different opcodes, from when handling registers, see the image attached for the proper instructions for handling immediates.</p>
+<img src="./images3823/14.png" alt="">
+<p>When handling branching, the <code>imm11</code> section that is bits 20 through 10 is the label address of the branch - address of the branching instruction</p>
+<p>The 4th through 0th bit for CBZ has <code>RT</code> in it, the target register is the register you are comparing to 0.</p>
+<img src="./images3823/15.png" alt="">
+<h1 id="3-3-single-cycle-datapth">3.3 Single Cycle Datapth</h1>
+<h2 id="notation">Notation</h2>
+<p><code>R[x] = 64-bit data inside register x</code>
+<code>M[a] = data at an address a inside memory</code>
+<code>D[a:b] = multibit data D, from bit a to b (inclusive)</code></p>
+<p>R[0][5:2] = 2nd to 5th bit in register <code>X0</code>
+M[R[1]][31:0] = data at an address indicated by the data in <code>X1</code></p>
+<p>if-else statements follow the format of <code>(truecase) if (condition) else (falsecase)</code>with true and false cases being whether the condition is true or not.</p>
+<p>if-else statements can be nested as well, following the form <code>(true case) if (condition) else (ifelse true case) if (ifelse condition) else (false condition)</code></p>
+<p>Blue lines transfer <strong>control signals</strong> which are usually 1 bit of data, but can be more, used to tell the CPU what operations to perform</p>
+<p>Black lines transfer <strong>data signals</strong> which sends data such as operands, they are usually groups of parallel lines/buses where each line transfers 1 bit and they do so simultaneously.</p>
+<p>attached is a <strong>single cycle data path</strong>, it a simplified and inefficient version but shows the key concepts of designing a processor</p>
+<p>note instruction and data memory are both the same memory and are only seperate for illustration, instruction goes to <code>.text</code> and data goes to either <code>.data</code>, <code>.bss</code>, or the stack area</p>
+<p>the process of each instruction takes only 1 clock cycle</p>
+<img src="./images3823/16.png" alt="">
 
 </main>
   </body>
