@@ -106,7 +106,249 @@ M[R[1]][31:0] = data at an address indicated by the data in <code>X1</code></p>
 <p>note instruction and data memory are both the same memory and are only seperate for illustration, instruction goes to <code>.text</code> and data goes to either <code>.data</code>, <code>.bss</code>, or the stack area</p>
 <p>the process of each instruction takes only 1 clock cycle</p>
 <img src="./images3823/16.png" alt="">
+<p>The stages of an instruction are as follows</p>
+<ol>
+<li><strong>Instruction Fetching (IF)</strong>: get instruction from memory</li>
+<li><strong>Instruction Decoding (ID)</strong>: the instruction will be prepared to be used as machine code, passing different parameters and using <code>opcode</code> to set up control signals</li>
+<li><strong>Execution (EX)</strong>: ALU will perform machine code set up in 2.</li>
+<li><strong>Memory Access (ME)</strong>: Send data to memory or read data from memory</li>
+<li><strong>Writing Back (WB)</strong> write back result to destination register</li>
+</ol>
+<p><strong>IF</strong></p>
+<p><code>PC</code> sends address of instruction to be executed, and then it is read from memory and sent out from <code>Data</code> on the data bus. The fetched instruction is <code>I</code>. </p>
+<p><code>PC</code> is also sent to an adder to calculate the next instruction address by adding 4. However the PC is not updated yet until the EX stage.</p>
+<img src="./images3823/17.png" alt="">
+<p><strong>ID</strong></p>
+<p>Take instruction <code>I</code> from IF, and send different fields to different data wires including reading register data.</p>
+<p>The highest 11 bits are <code>opcode</code> which is sent to the <strong>control unit</strong>, which converts opcode to control signals.</p>
+<p>The register file has two read ports, the first will take I[9:5], which encodes the register number as <code>n</code></p>
+<p>The second read port will send to I[4:0] pr I[20:16] depending on the <code>Reg2Loc</code> control signal, if it is active it goes to [20:16] and [4:0] otherwise.</p>
+<pre><code> # A group of control signals defined <span class="hljs-keyword">in</span> a <span class="hljs-string">'class'</span>
+ # All values are initialized <span class="hljs-keyword">as</span> zeros
+ <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">sigCntl</span>:
+   <span class="hljs-type">Reg2Loc</span>,<span class="hljs-type">PBr</span>,<span class="hljs-type">CBr</span>,<span class="hljs-type">UBr</span>,<span class="hljs-type">MemToReg</span>,<span class="hljs-type">MemRead</span>,<span class="hljs-type">MemWrite</span>,<span class="hljs-type">ALUsrc = 0</span>,<span class="hljs-type">0</span>,<span class="hljs-type">0</span>,<span class="hljs-type">0</span>,<span class="hljs-type">0</span>,<span class="hljs-type">0</span>,<span class="hljs-type">0</span>,<span class="hljs-type">0</span></span>
+   ALUop = <span class="hljs-number">0</span>b00
+ # Obtain opcode from I, and generate control signals
+ # Control() function returns an <span class="hljs-keyword">object</span> of sigCntl
+ opcode = I[<span class="hljs-number">31</span>:<span class="hljs-number">21</span>]
+ sigCntl  = Control(opcode)
 
+
+ # Read registers
+ ReadReg1 = n
+ n, m, t, d = I[<span class="hljs-number">9</span>:<span class="hljs-number">5</span>], I[<span class="hljs-number">20</span>:<span class="hljs-number">16</span>], I[<span class="hljs-number">4</span>:<span class="hljs-number">0</span>], I[<span class="hljs-number">4</span>:<span class="hljs-number">0</span>]
+ ReadReg2 = m <span class="hljs-keyword">if</span> sigCntl.Reg2Loc <span class="hljs-keyword">else</span> t
+ RegData1 = R[ReadReg1]
+ RegData2 = R[ReadReg2]
+</code></pre>
+<img src="./images3823/18.png" alt="">
+<p><strong>EX</strong></p>
+<p>2 inputs: <code>inputA</code> and <code>inputB</code>
+2 main parts: Computation and PC updating</p>
+<p>Computation</p>
+<p><code>inputA</code> is from <code>RegData1</code>
+<code>inputB</code> is from either <code>imm</code> or <code>RegData2</code> depending on if <code>ALUsrc</code> is true or false (<code>imm</code> if true, <code>RegData2</code> if false)</p>
+<p>output is <code>ALUout</code>, for instructions with condition codes such as <code>CMP</code>, <code>ALUout</code> will hold the <code>Z</code> flag. (Flag that___</p>
+<p>control signal <code>action</code> determines what calculation to do based on the <code>opcode</code> and <code>ALUop</code>, </p>
+<pre><code><span class="hljs-attr">inputA</span> = RegData1
+<span class="hljs-attr">inputB</span> = imm <span class="hljs-keyword">if</span> sigCntl.ALUsrc <span class="hljs-keyword">else</span> RegData2
+<span class="hljs-attr">action</span> = ALUControl(sigCntl.ALUop, opcode)
+ALUout,<span class="hljs-attr">Z</span> = ALU(action, inputA, inputB)
+</code></pre><p>image for computing logic attached under PC updating</p>
+<img src="./images3823/19.png" alt="">
+<p>PC updating</p>
+<p>4 options</p>
+<ol>
+<li>next instruction is 4 bytes after current instruction (nextPC calculated in IF stage)</li>
+<li>target instruction by unconditional branch (think B or BL)</li>
+<li>target instruction by conditional branch (think B.EQ or B.LT)</li>
+<li>target instruction pointed by link register aka <code>X30</code></li>
+</ol>
+<p>These options are determined by a multiplexer with 3 inputs</p>
+<ol>
+<li><code>nextPC</code>,  there is no branch and to go to the next instruction</li>
+<li><code>BrPC</code>, which is the calculated address of the branching direction. Since addresses of a branch target  are stored as offsets of the instruction, this number is just <code>PC+I[20:10]</code></li>
+<li><code>ALUout</code>, used for returning from procedures using <code>RET</code>, the return address is read from <code>X30</code> as <code>RegData2</code> and sent through the ALU and becomes <code>ALUout</code></li>
+</ol>
+<p>3 control signals
+<code>PBr</code>: true if procedure return
+<code>UBr</code>: true if unconditional branch
+<code>CBr</code>: true if conditional branch</p>
+<p>To perform a conditional branch, the <code>CBr</code> signal must be true and there must be a <code>Z</code> flag. 
+The logic for PC updating is as follows</p>
+<pre><code><span class="hljs-attr">BrPC</span> = PC + imm
+ <span class="hljs-attr">Br</span> = sigCntl.UBr | (sigCntl.CBr &amp; Z)
+ <span class="hljs-attr">PC</span>  = ALUout <span class="hljs-keyword">if</span> sigCntl.PBr <span class="hljs-keyword">else</span> (BrPC <span class="hljs-keyword">if</span> Br <span class="hljs-keyword">else</span> nextPC)
+</code></pre>
+<img src="./images3823/20.png" alt="">
+<p><strong>ME</strong></p>
+<p>Even if an instruction doesn&#39;t have memory access, it goes through ME</p>
+<p>Two unidirectional busses, <code>WriteDataM</code> and <code>ReadDataM</code></p>
+<p>Memory access instructions use <code>MemWrite</code> and <code>MemRead</code> to control whether the instruction is reading(LDR) or writing(STR). See table below.</p>
+<p><code>Address</code> in the table comes from <code>ALUout</code> (ALU calculates offsets too), though <code>ALUout</code> also bypasses memory because not every <code>ALUout</code> is used in ME.</p>
+<p><code>WriteDataM</code> comes from the register read <code>RegData2</code> 
+Ex: <code>STR X5, [X1, 0] --&gt;</code> <code>RegData2 = R[5]</code> writes to location <code>ALUout = R[1]+0</code></p>
+<p>In <code>LDR</code> <code>ReadDataM</code> is the same but instead of reading from register, it reads from memory</p>
+<p>Two outputs, <code>ALUout</code> from the ALU, and <code>ReadDataM</code></p>
+<img src="./images3823/21.png" alt="">
+<p><strong>WB</strong></p>
+<p><code>RegWrite</code> controls if you need to write to a register
+<code>ALUout</code>, <code>ReadDataM</code>, and <code>nextPC</code> are the possible values to use for <code>RegDataW</code>(which will be written into the register)</p>
+<p><code>MemToReg</code> and <code>LinkReg</code> are control signals that help determine which input to use.</p>
+<pre><code>RegDataW = nextPC <span class="hljs-keyword">if</span> sigCntl<span class="hljs-selector-class">.LinkReg</span> \
+                  <span class="hljs-keyword">else</span> ReadDataM <span class="hljs-keyword">if</span> sigCntl<span class="hljs-selector-class">.MemToReg</span> \ 
+                                 <span class="hljs-keyword">else</span> ALUout
+R[WriteReg] = RegDataW <span class="hljs-keyword">if</span> sigCntl<span class="hljs-selector-class">.RegWrite</span> <span class="hljs-keyword">else</span> R[WriteReg]
+</code></pre><p>if <code>RegWrite</code> is 0, nothing is written, so <code>R[WriteReg]</code> does not change, instead <code>RegDataW</code> becoems <code>ALUout</code></p>
+<p><code>LinkReg</code> is only used when <code>BL</code> is used to handle return addresses</p>
+<img src="./images3823/22.png" alt="">
+<h2 id="pipelining">Pipelining</h2>
+<p>Normally when an instruction goes through the 5 stages, only 1 instruction goes at a time and the rest are idle. Pipelining helps solve this issue.</p>
+<p><strong>Throughput</strong>: units of giga-instructions per second (GIPS), aka billions of instructions per second</p>
+<p><strong>Latency</strong>: total time required to perform a single instruction from beginning to end. Measured in picoseconds(ps) aka 1ps = 10^-12</p>
+<p>Using 3.28 as an example, assume it takes 300ps to get output <code>D</code> from input <code>sba</code>, and 20ps to push the data into the register. As a result it takes 320ps to move 1 input into <code>D</code>. (320*3=960)</p>
+<p>Essentially 1 input is processed per clock cycle instead of simultaneously.</p>
+<p>In the example, <code>s</code> goes through both <code>and</code> gates, and after 1 clock cycle will be at the <code>not</code> gate, while the other two inputs remain idle. There is no reason not to send these inputs to their respective <code>and</code> gates, and so we do just that. Creating a three-way pipeline. (See 3.30 for visual)</p>
+<img src="./images3823/23.png" alt="">
+<img src="./images3823/24.png" alt="">
+<p><strong>Pipeline Registers</strong></p>
+<p>The method of pipelining described above has some issues, such as when <code>s</code> enters stage 2 (using 3.30 above) is the que that we were supposed to send <code>b</code> to stage 1. However, since there is nothing blocking input <code>b</code>, it goes straight to stage 2, causing errors since the signals will be out of sync and may interrupt each other.</p>
+<p>To fix this you can place registers in between stages to act as &quot;barriers&quot; that make sure a signal completes its job before allowing all signals to progress to the next stage. These registers are called <strong>pipeline registers</strong> This would look like 3.31</p>
+<p>A pipeline register stores as many bits as signals entering it. (In 3.31 A=4 bits, B=2 bits)</p>
+<p>This works because registers only write data on the rising edge of a clock, so all outputs from a stage will be processed in the next stage at the exact same time. Preventing any overwriting described in the issue previously.</p>
+<p>Remember it takes 300ps for <code>D</code> from <code>sba</code> to be produced, not including registers, and since we are handling 3 stages, 300/3 = 100, though there is 1 register per stage, and 20ps per register, so 100+20 = 120. 
+120*3 = 360. This is 600ps faster than the unpipelined version (see above). Do note that the latency of an individual instruction is higher (100 vs 120),  but overall it&#39;s still faster.</p>
+<p>In reality though, not all stages take the same amount of time. This means that in order to make sure all stages can fit within 1 clock cycle for pipelining to be effective, <strong>the clock cycle duration is determined by the slowest stage.</strong></p>
+<p>A pipeline can be deepened by separating combinational logic into as many stages as possible, however the <strong>register overhead</strong> (time it takes to write to a register), makes it inefficient to just have as many stages as possible, since despite the shoter clock cycle, for each time it is shortened a flat value of latency is added.</p>
+<img src="./images3823/25.png" alt="">
+<p><strong>Converting Single-Cycle Datapath to Pipeline</strong></p>
+<p>The data path (see 3.20 under 3.3) is all combinational logic besides writing back.</p>
+<p>Pipelining the datapath will make the datapath much more efficient, for a comparison see 3.34 below</p>
+<p>3.35 is an example of what a datapath would look like when pipelined. A pipeline register is added between every stage.</p>
+<p>Our pipelined data path can have at most 5 instructions running simultaneously because there are 5 stages and you can&#39;t have two instructions in the same stage.</p>
+<img src="./images3823/26.png" alt="">
+<img src="./images3823/27.png" alt="">
+<h2 id="hazards">Hazards</h2>
+<p>Pipelining can easily lead to wrong executions called hazards.</p>
+<p>2 types of hazards
+<strong>data hazards</strong> and <strong>control hazards</strong></p>
+<p><strong>data hazard</strong>
+the pipeline is reading and writing incorrect values.</p>
+<p>Assume you have the register values in the table below. Then you run the 4 instructions in 3.37</p>
+<p>In cycle 3, SUB is calculated as R[1]-R[3] or 10-20 = -10, this value is written to X2 at the end of WB. Until WB is finished, X2&#39;s value is its original value of 10.</p>
+<p>When SUB enters WB, the second ADD instruction is in EX, and uses X2. Since X2 is not updated until the end of SUB&#39;s WB, it is adding 10 instead of -10. Causing a data hazard.</p>
+<p><strong>Stalling the Pipeline manually</strong></p>
+<p>The first solution is the most straightforward. The issue with a data hazard is we read registers too fast, so we can stall it to allow the registers to get in the state they need to be. To successfully stall the pipeline we need to figure out to which cycle we want to stall till, and how to stall the pipeline.</p>
+<p>Solution 1 is to rearrange the instructions so that the instructions don&#39;t interfere with each other anymore, this is seen in 3.38</p>
+<p>Solution 2 is to use the <code>NOP</code> instruction. The NOP instruction stands for &quot;no operation&quot; and all it does is waste time. By adding 1 <code>NOP</code> in-between the two <code>ADD</code>s, the <code>SUB</code>&#39;s WB stage will be in sync with <code>ADD</code>&#39;s ID stage. Adding more NOPS does nothing, extra besides waste more time. (See 3.39)</p>
+<p>Solution 1 is not always possible, while Solution 2 always is. You can use both Solution 1 and Solution 2 at the same time as necessary. </p>
+<p><strong>Stalling the pipeline automatically</strong>
+A way to resolve data hazards automatically is through a combinational circuit called the <strong>hazard detection unit</strong>, using the example in 3.40, at cycle 4, instruction 1 is in ME stage, while instruction 3 is in ID stage. The hazard detection unit detects this and stalls instruction 3 to ensure it reads the right variables.</p>
+<p>To stall, a bubble is put, which is essentially a NOP.</p>
+<img src="./images3823/28.png" alt="">
+<img src="./images3823/29.png" alt="">
+<img src="./images3823/30.png" alt="">
+<img src="./images3823/31.png" alt="">
+<p>In this case, one bubble is not enough, so we insert another to prevent a hazard for <code>X2</code> at cycle 5. At cycle 6, both <code>X1</code> and <code>X2</code> have been updated, so cycle 7 and onwards continues as normal pipelined instructions since the data hazard has been resolved.</p>
+<p>Usually data hazards happen when one instruction is trying to read a register that hasn&#39;t been updated from previous instructions. If an instruction at ID stage relies on a previous instruction whose <code>RegWrite</code> signal is 1, and hasn&#39;t reached the WB stage, then a data hazard will occur.</p>
+<pre><code><span class="hljs-keyword">if</span> IDEX.RegWrite:
+  <span class="hljs-keyword">if</span> IDEX.<span class="hljs-attr">WriteReg</span> == IFID.ReadReg1 <span class="hljs-literal">or</span> IDEX.<span class="hljs-attr">WriteReg</span> == IFID.ReadReg2:
+     <span class="hljs-comment"># Stall the pipeline</span>
+ <span class="hljs-keyword">if</span> EXME.RegWrite:
+   <span class="hljs-keyword">if</span> EXME.<span class="hljs-attr">WriteReg</span> == IFID.ReadReg1 <span class="hljs-literal">or</span> EXME.<span class="hljs-attr">WriteReg</span> == IFID.ReadReg2:
+     <span class="hljs-comment"># Stall the pipeline</span>
+</code></pre><p>Figure 3.41 shows what a data path would look like with an added hazard detection unit.</p>
+<p>When a hazard is detected, the detection unit does 2 things</p>
+<ol>
+<li><p>Stall instructions in IF and ID stages, overwriting PC and values in the IFID register. The instruction at IF will be fetched again, but PC is being overwritten so it won&#39;t update the values in the IFID register, so the pipeline has been properly held.</p>
+</li>
+<li><p>Insert bubbles into the EX stage. If a data hazard is detected, send instructions to IDEX using a multiplexer, if there is a hazard, IDEX will receive a NOP instead.</p>
+</li>
+</ol>
+<img src="./images3823/32.png" alt="">
+<p><strong>Forwarding Data</strong></p>
+<p>Stalling a pipeline avoids data hazards, but it slows down the pipeline. A lot of the time fowarding data rom EX can be faster, so we make another combinational circuit called the <strong>forwarding unit</strong>(see 3.42 1 message down). The unit will detect if there is a data hazard, and if so it will overwrite the data read from the registers so a new value can be used as the input of the ALU instead of the old registers.</p>
+<p>For the two operands from the ALU, we use a four way multiplexer to select 1 of 3 possible inputs, one from ALUout of the previous instruction, one from RegDataW, and one from either RegData1 or RegData2.</p>
+<p>FA and FB are control signals for the multiplexer and follow the table attached. </p>
+<p><strong>Conditions for forwarding</strong></p>
+<p>If <code>FA = 0b01</code>, then the operands are fowarded from the previous ALU result. If the ALU result of instruction i will be used as any of the operands in the following instruction i+1, i&#39;s WriteReg matches one of the operands of i+1.</p>
+<p>The EXME.WriteReg != 31 condition is added just because <code>X31</code> is the zero register so it is impossible to have a data hazard.</p>
+<p>The next possible condition is <code>FA == 10</code>, which is operand A is forwarded from RegDataW which is one of the 3 signals, MEWB.nextPC (branching), MEWB.ReadDataM (memory read), or MEWB.ALUout (alu operation)</p>
+<p>Logically we get</p>
+<pre><code>
+<span class="hljs-keyword">if</span> EXME.RegWrite <span class="hljs-keyword">and</span> \
+   EXME.WriteReg == IDEX.ReadReg1 <span class="hljs-keyword">and</span> \
+   EXME.WriteReg != <span class="hljs-number">31</span>:
+     FA = <span class="hljs-number">0b01</span>
+elif MEWB.RegWrite <span class="hljs-keyword">and</span> \
+   MEWB.WriteReg != <span class="hljs-number">31</span> <span class="hljs-keyword">and</span> \
+   MEWB.WriteReg == IDEX.ReadReg1:
+     FA = <span class="hljs-number">0b10</span>
+<span class="hljs-keyword">else</span>:
+   FA = <span class="hljs-number">0b00</span>
+</code></pre>
+<img src="./images3823/33.png" alt="">
+<p><strong>Multiple Possible Forwarding</strong></p>
+<p>In the logic we put the ME checking in an elif instead of if because if we can receive data from EX we don&#39;t consider ME anymore.
+Using the example below</p>
+<pre><code>ADD <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, <span class="hljs-keyword">X</span><span class="hljs-number">2</span>
+ADD <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, <span class="hljs-keyword">X</span><span class="hljs-number">3</span>
+ADD <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, <span class="hljs-keyword">X</span><span class="hljs-number">4</span>
+</code></pre><p>When the third <code>ADD</code> instruction is at ID, we have new <code>X1</code> values forwarded from both EX and ME stages which are the results of the first and second instructions respectively. Naturally we should use the most recent result which is from EX.</p>
+<p><strong>Removing Wires for Stalling</strong></p>
+<p>After adding a forwarding unit, it is faster because it doesn&#39;t waste cycles or slow down the pipeline. The one situation where forwarding doesn&#39;t work is when the destination for LDR is exactly both operands for the next instruction.</p>
+<pre><code>LDR <span class="hljs-keyword">X</span><span class="hljs-number">0</span>, [<span class="hljs-keyword">X</span><span class="hljs-number">1</span>, <span class="hljs-number">48</span>]
+ADD <span class="hljs-keyword">X</span><span class="hljs-number">2</span>, <span class="hljs-keyword">X</span><span class="hljs-number">0</span>, <span class="hljs-keyword">X</span><span class="hljs-number">0</span>
+</code></pre><p><code>LDR</code> is still reading the memory and will not extract the correct value of <code>X0</code> until the next cycle. Once <code>LDR</code> is in the WB stage with the correct value of <code>X0</code>, <code>ADD</code> is already in the EX stage using the wrong value of <code>X0</code></p>
+<p>We make sure the hazard detection unit can handle the following logic.</p>
+<pre><code><span class="hljs-keyword">if</span> IDEX.MemRead:
+    <span class="hljs-keyword">if</span> IDEX.<span class="hljs-attr">WriteReg</span> == IFID.ReadReg1 <span class="hljs-literal">or</span> \
+    IDEX.<span class="hljs-attr">WriteReg</span> == IFID.ReadReg2:
+        <span class="hljs-comment"># Stall the pipeline</span>
+</code></pre><p>3.42 shows what the datapath will look with a forwarding unit added.</p>
+<img src="./images3823/34.png" alt="">
+<p><strong>Control Hazards</strong></p>
+<p>Control Hazards are the wrong execution of programs, primarily due to branching.</p>
+<pre><code>  CBZ <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, .L<span class="hljs-number">1</span>
+  <span class="hljs-keyword">AND</span> <span class="hljs-keyword">X</span><span class="hljs-number">12</span>, <span class="hljs-keyword">X</span><span class="hljs-number">2</span>, <span class="hljs-keyword">X</span><span class="hljs-number">5</span>
+  ORR <span class="hljs-keyword">X</span><span class="hljs-number">13</span>, <span class="hljs-keyword">X</span><span class="hljs-number">6</span>, <span class="hljs-keyword">X</span><span class="hljs-number">2</span>
+  ADD <span class="hljs-keyword">X</span><span class="hljs-number">14</span>, <span class="hljs-keyword">X</span><span class="hljs-number">2</span>, <span class="hljs-keyword">X</span><span class="hljs-number">2</span>
+.L<span class="hljs-number">1</span>: LDR <span class="hljs-keyword">X</span><span class="hljs-number">4</span>, [<span class="hljs-keyword">X</span><span class="hljs-number">7</span>, <span class="hljs-number">48</span>]
+</code></pre><p>In the code above, if <code>X1</code> is 0, after <code>CBZ</code> we should execute <code>LDR</code>. However the value of <code>X1</code> can only be determined at the EX stage and by then <code>ORR</code> and <code>AND</code> have already entered the pipeline. If <code>X1</code> is zero there are now two instructions which arent supposed to be there.
+Do note if <code>X1</code> is not zero, all is fine,</p>
+<p>A simple solution is to just cancel the wrong instructions when he notice a control hazard. This is a <strong>flush</strong> which is the control hazards version of bubbles and <code>NOP</code>. Figure 3.43 shows what this looks like in a pipeline diagram.</p>
+<p><strong>Branch Prediction</strong></p>
+<p>The inserting bubble method works fine and wastes only 2 cycles.The only reason we waste 2 cycles is because there are 5 stages, and the earliest time the register value is confirmed is EX stage. Modern processors have more stages and deeper pipelines, if the processor has N stages, and the value of a register can be confirmed halfway through (N/2). Then we must waste N/2 cycles. For a large N this is very inefficient, so we use static and dynamic prediction.</p>
+<p><strong>Static Predictions</strong></p>
+<p>Static Prediction happens at <strong>compilation time</strong>
+Has many different methods including
+Always taken
+Always not taken
+BTFN (predict branch taken if it&#39;s repeating, else predict branch not taken)
+To find the <strong>misprediction rate</strong> of a strategy, MR=Total # of wrong prediction / Total # of prediction #</p>
+<p><strong>Dynamic Prediction</strong></p>
+<p>Uses hardware to record behavior of every branch, if it&#39;s taken or not, and make decisions based on current status. This happens during <strong>run time</strong>, has two methods, <strong>Last-time predictor</strong> and <strong>Two-bit predictor</strong></p>
+<img src="./images3823/35.png" alt="">
+<p>Last-time predictor uses which direction the branch went last time to predict when it will take the branch next time. A loop with N iterations will have a misprediction on the first and last iteration, so MR=2/N. The issue with last-prediction is it changes state very quicky. </p>
+<p>Two-bit predictor is much more complex but addresses that problem. Two-bit predictor predicts the branch based on it&#39;s past two predictions and actual behaviors. (see 3.44). Assume in i iteration, the predictor is at <strong>strongly taken</strong>, and predicts the branch is taken, but it isn&#39;t taken, in i+1, instead of predicting it is not taken, it will enter <strong>weakly taken</strong> but still predict it&#39;s taken. If it is still wrong, in iteration i+2 it will enter <strong>weakly not taken</strong>. Research found a two-bit predictor has about a 10%-15% misprediction rate.</p>
+<img src="./images3823/36.png" alt="">
+<h2 id="3-6-performance-evaluation">3.6 Performance Evaluation</h2>
+<p>The <strong>clock rate</strong> is the amount of cycles the CPU can run in 1 second.
+The <strong>clock period</strong> is the amount of time spent on 1 cycle</p>
+<p>clock rate (or clock frequency) Hz= 1/clock period</p>
+<p>A computer with a clock period of 250ps or 2.5*10^-10 s, will have a clock rate of 1/(2.5*10^-10) = 4GHz</p>
+<p>The time spent on a program is called <strong>CPU time</strong>, If I=instructions, CPI = Cycles per instruction, and C = seconds per cycle (or clock period)</p>
+<p>CPU time = I*CPI*C or (I*CPI)/clock rate</p>
+<p>Less number of cycles the better for CPI, but also lowers the clock rate.
+For clock rate the higher the better.
+Those two factors are out of our control as CS majors and is left up to the CPEs (ngl knowing engineers don&#39;t take any major courses until junior, we are cooked)
+The only factor we can control as computer scientists is the instruction count I. While modern compilers already optimize our code for us, they aren&#39;t perfect and can&#39;t optimize everything to very good levels.</p>
+<p>For K instruction classes and a program with I_k instructions where k ∈ K, the clock cycles formula becomes</p>
+<p>Clock cycles = Summation of k=1 to K, with the equation I_k * CPI_k</p>
+<p>In other words (I_1*CPI_1)+(I_2*CPI_2)+...+(I_K*CPI_K)</p>
+<p>The <strong>weighted average CPI</strong> can be calculated as
+CPI = Clock cycles / I or ((I_1/I)*CPI_1 / )+((I_2/I)*CPI_2)+...+((I_K/I*CPI_K)
+I is the total number of instructions, and I_k/I is the <strong>relative frequency</strong> of instruction k.</p>
 </main>
   </body>
 </html>
