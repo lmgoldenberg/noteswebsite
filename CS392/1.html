@@ -6,7 +6,236 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 1</p>
-    <main>
+        <h1 id="1-1-file-organization">1.1 File Organization</h1>
+<p>All files are in a tree structure in Linux where <code>/</code> is the <strong>root directory</strong>.
+There are special directories under the root, some are listed below.
+<code>/bin</code>: Contains only binaries(executables) needed for system use.
+<code>/dev</code>: Some physical or logical device(ex: drivers), these files are never run like other programs, but are read and write from like text files.
+<code>/home</code>: Linux systems can have multiple users, each user has a specific folder under <code>/home</code> calleed their <strong>home directory</strong>
+<code>/root</code>: NOT TO BE CONFUSED WITH ROOT DIRECTORY, In a Linux system there is a <strong>superuser</strong> who can do certain things other users can&#39;t, this is the home directory of the superuser.</p>
+<p>When opening the terminal, you automatically start at the home directory <code>/home/exampleusername</code>, this is shortened to a <code>~</code>, and the <code>cd</code> command can be used to go to other directories.</p>
+<p><strong>Relative Path</strong>: The path relative to where you are in the Linux system. Note that <code>..</code> is to go back a path in Linux.</p>
+<p><strong>Absolute Path</strong>: The path that always starts from the root directory.</p>
+<p><code>pwd</code> prints out the current directory or <strong>working directory</strong></p>
+<p><code>ls</code> lists all files under the specified directory</p>
+<p><code>tree</code> shows the tree structure of the file hierarchy</p>
+<p><code>cat</code> prints the file content of a file to the terminal</p>
+<p><code>wc</code> shows the number of lines, words, and bytes for the file it is ran on.</p>
+<p><code>mkdir</code> allows you to make a directory by specifying the new directory&#39;s name or path</p>
+<p><code>touch</code> makes an empty file</p>
+<p><code>rm</code> deletes a file, to delete a directory one must add the recursive flag which is <code>-r</code> after</p>
+<p>There is no recycle bin in Linux.</p>
+<p>If you want to be super evil (please don&#39;t, I don&#39;t wanna be paranoid when I leave my laptop unattended), run <code>rm -rf /</code> which will delete the root directory, therefore deleting EVERYTHING off a Linux system.</p>
+<h2 id="1-2-environment-variables">1.2 Environment Variables</h2>
+<p><code>/bin</code> stores all executables, commands such as the ones listed in the previous chapters are all executables stored in <code>/bin</code>, so <code>ls</code> causes the terminal to run the executable <code>/bin/ls</code> aka <code>/usr/bin/ls</code>.</p>
+<p>The shell knows where these executables are due variables which point to the correct location called <strong>environment variables</strong>.</p>
+<p><code>env</code> prints out the environment variables, each one follows the format of <code>NAME=value1:value2:value3</code>, if there is only 1 value, then there are no <code>:</code>.</p>
+<p>To find an individual variable use <code>echo $NAME</code> which will print the values before the variable.</p>
+<h2 id="1-3-special-characters">1.3 Special Characters</h2>
+<p>3 standard streams, each is referred to by an integer
+<code>stdin</code> for user input, is referred to by a 0
+<code>stdout</code> for printing to the terminal output, is referred to by a 1
+<code>stderr</code> for printing error messages to the terminal output, is referred to by a 2</p>
+<p>Regular output and error output is separated for logging purposes.</p>
+<p>To redirect an output from terminal to a file, use the redirection operator <code>&gt;</code> to print to a specific file. <code>&gt;</code> overwrites the file, <code>&gt;&gt;</code> is to append to the file.</p>
+<p>Examples
+<code>$ echo hello world</code> (print to terminal)
+<code>$ echo hello world &gt; temp.txt</code> (print to file, overwrite)
+<code>$ echo hello world &gt;&gt; temp.txt</code> (print to file, append)</p>
+<p>There is also a special file called <code>/dev/null</code> where outputs will just disappear. By redirecting to this file you can remove an output if you don&#39;t care for it.</p>
+<p>Using redirection by default only redirects stdout, stderr will still show up on the terminal. To redirect stderr use <code>2&gt;</code> instead of <code>&gt;</code> since 2 stands for stderr.</p>
+<p>Because stderr and stdout look identical on the terminal, redirecting stderr or stdout to another file is helpful.</p>
+<p>To merge stderr and stoud you can do <code>2&gt;&amp;1</code>.
+Example: <code>$ ((echo &quot;what the shell?&quot; &gt;&amp;2); echo &quot;392&quot;) &gt; log.txt 2&gt;&amp;1</code> What this command does is to echo  &quot;what the shell?&quot; first through  stderr, and then &quot;392&quot; through stdout. It redirects the output to  log.txt but also merges stdout and stderr so the file contains both strings.</p>
+<p>The pipe operator <code>|</code> allows us to send data from one program to another.
+Example:  <code>$ prog1 | prog2 | prog3 | ....</code> prog1 stdout is used as stdin for prog2, prog2 stdout is used as stdin for prog3, and so on.</p>
+<p><code>wc</code> when it has no file name input, will use stdin as an input, so running <code>$ ls | wc -w</code> where the <code>-w</code> flag specifies to only print the number of words. This will give us the amount of files in a directory.</p>
+<p>Pipe operators can be combined with redirection.</p>
+<h2 id="1-4-bash-script">1.4 Bash Script</h2>
+<p>The type of terminal we will be studying is the bash terminal.
+Bash = Bourne Again Shell
+There are different types of terminals with different functionalities.</p>
+<p>A command is just a single line, a bash script is multiple commands, think python in cs115 when we started the first lecture with typing to the shell.</p>
+<p>Example Script</p>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># hello.sh</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"Hello World!"</span>
+</code></pre>
+<p>First line is always required, second line is a comment, third line is the command.
+All bash scripts are executable binaries, hence why they are under bin.</p>
+<p>$ allows to evaluate the value assigned to a variable, first echo will print STR, second will print Hello World!
+Adding <code>readonly</code> before a variable declaration makes it readonly.</p>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># variable.sh</span>
+STR=<span class="hljs-string">"Hello World!"</span>
+<span class="hljs-built_in">readonly</span> ABC=<span class="hljs-string">"XYZ"</span>
+<span class="hljs-built_in">echo</span> STR
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$STR</span>
+</code></pre>
+<p>Commands have return values. To access the return value of a command use the syntax <code>$( command )</code>.</p>
+<p>Multiple commands would be written as <code>$(command1; command2; ...; command_N)</code>, where <code>command_N</code>&#39;s return value is the one returned to the script.</p>
+<p>Bash scripts can only do integer calculations. For floats you have to use utilities like <code>bc</code>. Calculating a number is very similar to return values except with double parenthesis instead of single parenthesis. Example: <code>$(( math-expression ))</code></p>
+<p>This example will print out 2000</p>
+<pre><code class="lang-bash">arg1=20
+arg2=10
+vol=$(( 10 * <span class="hljs-variable">$arg1</span> * <span class="hljs-variable">$arg2</span> ))
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$vol</span>
+</code></pre>
+<p>Conditionals are written as, and the conditions are in the table attached</p>
+<pre><code class="lang-bash"><span class="hljs-keyword">if</span> [[ Condition_1 ]]; <span class="hljs-keyword">then</span>
+    # <span class="hljs-keyword">If</span> condition_1 <span class="hljs-keyword">is</span> <span class="hljs-literal">TRUE</span>
+elif [[ Condition_2 ]]; <span class="hljs-keyword">then</span>
+    # <span class="hljs-keyword">If</span> condition_1 <span class="hljs-keyword">is</span> <span class="hljs-literal">FALSE</span> <span class="hljs-keyword">and</span> condition_2 <span class="hljs-keyword">is</span> <span class="hljs-literal">TRUE</span>
+<span class="hljs-keyword">else</span>
+    # <span class="hljs-keyword">If</span> both condition_1 <span class="hljs-keyword">and</span> condition_2 are <span class="hljs-literal">FALSE</span>
+fi
+</code></pre>
+<p>Arrays are written as</p>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># array.sh</span>
+<span class="hljs-comment"># Method 1:</span>
+<span class="hljs-built_in">declare</span><span class="hljs-_">-a</span> array
+array[0]=<span class="hljs-string">"hi"</span>
+array[1]=<span class="hljs-string">"bye"</span>
+
+<span class="hljs-comment"># Method 2</span>
+newarray=(1 2 <span class="hljs-string">"three"</span> 4 <span class="hljs-string">"five"</span>)
+</code></pre>
+<p>Common array operations are found in the table attached.</p>
+<img src="./images3921/1.png" alt="">
+<img src="./images3921/2.png" alt="">
+<p>Bash has for, while, and until loops, but only for is here since it is the most commonly used.</p>
+<p>For loops are written as</p>
+<pre><code class="lang-bash"> <span class="hljs-comment">#!/bin/bash</span>
+ <span class="hljs-comment"># array_loop.sh</span>
+ array=(1 2 <span class="hljs-string">"three"</span> 4 <span class="hljs-string">"five"</span>)
+
+ <span class="hljs-comment"># Iterating over indices</span>
+ <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-variable">${!array[@]}</span>; <span class="hljs-keyword">do</span>
+   <span class="hljs-built_in">echo</span> <span class="hljs-string">"[<span class="hljs-variable">${i}</span>]: <span class="hljs-variable">${array[$i]}</span>"</span>
+ <span class="hljs-keyword">done</span>
+ <span class="hljs-comment"># Iterating over elements</span>
+ <span class="hljs-keyword">for</span> elem <span class="hljs-keyword">in</span> <span class="hljs-variable">${array[@]}</span>; <span class="hljs-keyword">do</span>
+   <span class="hljs-built_in">echo</span> <span class="hljs-variable">${elem}</span>
+<span class="hljs-keyword">done</span>
+ <span class="hljs-comment"># Iterating for a specific number</span>
+ <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> {0..10}; <span class="hljs-keyword">do</span>
+   <span class="hljs-built_in">echo</span> <span class="hljs-string">"[<span class="hljs-variable">${i}</span>]: <span class="hljs-variable">${array[$i]}</span>"</span>
+<span class="hljs-keyword">done</span>
+</code></pre>
+<p>For loops in bash are inclusive, <code>for i in {a..b}</code> will iterate from a to exactly b. The two dots are also required, and it is called <strong>expansion</strong>.</p>
+<p>You can also put letters in a for loop. Letters will iterate in ASCII order (uppercase is before lowercase). You cannot mix letters and numbers in a for loop, it is either only letters or only numbers.</p>
+<p>Functions are written and called as</p>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># function.sh</span>
+height=3
+<span class="hljs-keyword">function</span> volume {
+   <span class="hljs-comment"># vol is a local variable</span>
+   vol=$(( <span class="hljs-variable">$height</span> * <span class="hljs-variable">$1</span> * <span class="hljs-variable">$2</span> ))
+   <span class="hljs-built_in">echo</span> <span class="hljs-variable">$vol</span>
+}
+volume 10 20
+result=$(volume 10 20)
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"Result: <span class="hljs-variable">$result</span>"</span>
+</code></pre>
+<p>When passing parameters to a function, you pass them when calling the function in order such that <code>$1</code> refers to the first parameter, <code>$2</code> refers to the second parameter, and so on. </p>
+<p>The <code>read</code> command works similarly to <code>input</code> from Python. It waits for the user to enter an input. It is written as</p>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># read.sh</span>
+<span class="hljs-built_in">read</span> input
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"Result: <span class="hljs-variable">${input}</span>"</span>
+</code></pre>
+<p>To redirect inputs to come from a file, use <code>&lt;</code>. It will cause the script to not wait for the user input, since it will come from the file listed. An example of running read.sh with input redirection will look like below
+<code>$ ./read.sh &lt; random.txt</code>.</p>
+<p>The <code>&lt;&lt;</code> operator is different from <code>&gt;&gt;</code> (append output) operator. <code>&lt;&lt;</code> is to create a <strong>heredoc</strong> or Here document.</p>
+<p>It allows you to create a temporary file for testing commands which use a file. Ex: the <code>cat</code> command. </p>
+<p>The syntax for writing a heredoc is, where <code>DELIMETER</code> is any string, typically <code>EOF</code> or <code>END</code>. While <code>HERE-DOCUMENT</code> contains multiple lines that will be fed into the command.</p>
+<pre><code class="lang-bash"><span class="hljs-attribute">COMMAND</span> &lt;&lt; DELIMITER
+HERE-DOCUMENT
+DELIMITER
+</code></pre>
+<p>After running <code>cat &lt;&lt; EOF</code>, you can write the content of the file, and then type <code>EOF</code> or whichever delimiter you choose.</p>
+<p>This allows you to run commands or scripts that require file inputs without actually having a file. Below is an example of how a <code>heredoc</code> would look in a bashscript.</p>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># here.sh</span>
+cat &lt;&lt; EOF
+The current working directory is: $(<span class="hljs-built_in">pwd</span>)
+You are logged <span class="hljs-keyword">in</span> as: $(whoami)
+EOF
+</code></pre>
+<p>Heredoc can be used to print out longer messages to the user.</p>
+<p>Positional Arguments refer to those which don&#39;t have any flags. In the example <code>$ ./test.sh hello world whats up</code>, <code>hello</code>, <code>world</code>, <code>whats</code>, and <code>up</code> are the 4 positional arguments.</p>
+<p>These can be used in a script by using the <code>$</code> in a similar style as described when writing functions.</p>
+<p><code>$#</code> will get the number of arguments, not including the command itself.</p>
+<p><strong>arguments are numbered starting from 1</strong></p>
+<p>Here is an example of a loop being used to print all of the arguments. </p>
+<pre><code class="lang-bash"><span class="hljs-built_in">echo</span> <span class="hljs-string">"There are <span class="hljs-variable">$#</span> arguments:"</span>
+<span class="hljs-keyword">for</span> word <span class="hljs-keyword">in</span> <span class="hljs-string">"<span class="hljs-variable">$@</span>"</span>; <span class="hljs-keyword">do</span>
+  <span class="hljs-built_in">echo</span> <span class="hljs-string">"<span class="hljs-variable">$word</span>"</span>;
+<span class="hljs-keyword">done</span>
+</code></pre>
+<p>Flags are essentially extra options for commands. Ex: <code>-l</code> to <code>ls</code> to show the files in a long format, or <code>+x</code> to <code>chmod</code> to make the file an executable.</p>
+<p><code>getopts</code> allows us to process SHORT flags. <code>getopt</code>, which has no s is used for LONG flags.</p>
+<p>Short flag examples: <code>-2</code>, <code>-d</code>, <code>-D</code>, <code>-2dD</code>. Note that <code>-2dD</code> is not one flag, but a  combination of 3 short ones.</p>
+<p>Long flag examples:
+<code>--verbose</code>, <code>--help</code>.</p>
+<p>Since <code>getopts</code> only processes one option at a time, it is best to use <code>getopts</code> in a loop with a structure such as below.</p>
+<pre><code class="lang-bash"><span class="hljs-keyword">while</span> <span class="hljs-built_in">getopts</span> <span class="hljs-string">"&lt;option-list&gt;"</span> &lt;option-variable&gt;; <span class="hljs-keyword">do</span>
+  <span class="hljs-keyword">case</span> <span class="hljs-string">"<span class="hljs-variable">${&lt;option-variable&gt;}</span>"</span> <span class="hljs-keyword">in</span>
+     &lt;option-1&gt;)
+     <span class="hljs-comment"># Process for option 1</span>
+     ;;
+     &lt;option-2&gt;)
+     <span class="hljs-comment"># Process for option 2</span>
+     ;;
+     *)
+     <span class="hljs-comment"># If none of the above</span>
+     ;;
+  <span class="hljs-keyword">esac</span>
+<span class="hljs-keyword">done</span>
+</code></pre>
+<p><code>&lt;option-list&gt;</code> is a list of all acceptable letters as flags. Ex: If a program only accepts <code>-n</code>, <code>-p</code>, and <code>-i</code>, then the list should be <code>npi</code>.</p>
+<p>Some flags need an argument, ex: in <code>./demo.sh -n josh</code>, <code>josh</code> is an argument of <code>-n</code>. If a flag needs an argument, it needs a <code>:</code> after the letter. The list example above would be <code>n:pi</code>. 
+If a flag has an invalid or no argument, the script will automatically print an error message. To hide the error message for a flag, put a colon infront of the flag in the option list. The example would become <code>:n:pi</code>.</p>
+<p><code>&lt;option-variable&gt;</code> is a variable which represents the flag recieved in that iteration, which will then be used in the switch case in the loop.</p>
+<p><code>&lt;option-x&gt;</code> is where you put each flag, and then write what to do with the flag where the comment is in the code above. If a flag uses an argument, get the argument by using <code>${OPTARG}</code>.</p>
+<p><code>*</code> represents any flag that is not in the option list, or is missing an argument if one is required.</p>
+<p>A good practice is to set variables, then process flags, then the rest of your script, and to end with <code>exit 1</code> when there are errors. The script will automatically <code>exit 0</code> at the end once it is finished so there is no need to include it.</p>
+<p>Attached is bash script example which uses a lot of what is learned in this chapter and has good practice.</p>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># demo_getopts.sh</span>
+<span class="hljs-built_in">print</span>=0
+name=<span class="hljs-string">""</span>
+repeat=1
+
+<span class="hljs-keyword">while</span> <span class="hljs-built_in">getopts</span> <span class="hljs-string">"n:pi:"</span> options; <span class="hljs-keyword">do</span>
+<span class="hljs-keyword">case</span> <span class="hljs-string">"<span class="hljs-variable">${options}</span>"</span> <span class="hljs-keyword">in</span>
+  n) name=<span class="hljs-variable">${OPTARG}</span>
+  ;;
+  p) <span class="hljs-built_in">print</span>=1
+  ;;
+  i) repeat=<span class="hljs-variable">${OPTARG}</span>
+  ;;
+  *) <span class="hljs-built_in">echo</span> <span class="hljs-string">"Oops"</span> &gt;&amp;2
+    <span class="hljs-built_in">exit</span> 1
+<span class="hljs-keyword">esac</span>
+<span class="hljs-keyword">done</span>
+
+<span class="hljs-keyword">if</span> [[ <span class="hljs-variable">$name</span> = <span class="hljs-string">""</span> || <span class="hljs-variable">$print</span><span class="hljs-_">-eq</span> 0 || <span class="hljs-variable">$repeat</span><span class="hljs-_">-lt</span> 1 ]]; <span class="hljs-keyword">then</span>
+  <span class="hljs-built_in">echo</span> <span class="hljs-string">"Bad arguments."</span> &gt;&amp;2
+  <span class="hljs-built_in">exit</span> 1
+<span class="hljs-keyword">fi</span>
+
+<span class="hljs-keyword">if</span> [[ <span class="hljs-built_in">print</span><span class="hljs-_">-eq</span> 1 ]]; <span class="hljs-keyword">then</span>
+   msg=<span class="hljs-string">"omg <span class="hljs-variable">${name}</span> h"</span>
+<span class="hljs-keyword">fi</span>
+
+<span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> $(seq <span class="hljs-variable">$repeat</span>); <span class="hljs-keyword">do</span>
+  msg=<span class="hljs-string">"<span class="hljs-variable">${msg}</span>i"</span>
+<span class="hljs-keyword">done</span>
+
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$msg</span>
+</code></pre>
+</main>
   </body>
 </html>
