@@ -11,7 +11,7 @@
 <p>When C code is compiled, it is translated into assembly code, which includes variables and instructions that are sorted in the virtual memory (382!). (See 3.1 below for refresher)</p>
 <p>The virtual memory (VM) address starts at <code>0x0</code> to a large number, on a 32-bit machine, the VM size is always 4GB: 3GB for the user addressable portion, and 1 GB for the kernel addressable portion.</p>
 <p>The lowest address of <code>0x0</code> to a random small address is unused for security reasons.</p>
-        <img src="./images3923/1.png" alt="">
+        <img src="./images3923/1.png" alt="img id 1, if you see this msg email me!">
 <p><strong>Read-Only Segment</strong></p>
 <p>The read-only segment contains the second lowest address space in the VM, and contains the <code>.text</code> and <code>.rodata</code> segments.
 <code>.text</code>: binary machine code (translated from our C code) is stored, for example function pointers to here</p>
@@ -46,7 +46,7 @@ char* str2 = <span class="hljs-string">"def"</span><span class="hljs-comment">;<
 <code>sbrk()</code> will increment the current program break by <code>increment</code> bytes, and returns the previous program break (before increment), it is a C library function that calls <code>brk()</code>.</p>
 <p>You can see the current program break by calling <code>sbrk(0)</code>. (no increment, no change, still returns value)</p>
 <p>The space between the end of r/w and the program break is the <strong>heap</strong>, managing the heap using <code>sbrk()</code> and <code>brk()</code> is poor practice, but these concepts are important for other functions like  <code>malloc()</code></p>
-        <img src="./images3923/2.png" alt="">
+        <img src="./images3923/2.png" alt="img id 2, if you see this msg email me!">
         <p><strong>Using C Library Calls</strong></p>
 <p>To allocate new space in memory manually, it is better to use <code>malloc()</code> which is declared in <code>&lt;stdlib.h&gt;</code>,</p>
 <p>Here is an example of using <code>malloc()</code></p>
@@ -98,7 +98,7 @@ free(<span class="hljs-name">ptr_integer</span>)<span class="hljs-comment">;</sp
 int* ptr_array = (<span class="hljs-name">int*</span>) malloc(<span class="hljs-name">sizeof</span>(<span class="hljs-name">int</span>) * 10);
 free(ptr_array);
 </code></pre>
-        <img src="./images3923/3.png" alt="">
+        <img src="./images3923/3.png" alt="img id 3, if you see this msg email me!">
         <p><strong>Implementing Memory Allocator</strong></p>
 <p>There are two types of memory allocators, explicit and implicit. <strong>Explicit allocators</strong> are used by C and C++ where spaces are manually allocated using <code>malloc()</code> or the <code>new</code> keyword. <strong>Implicit allocators</strong> which can be found in JAVA, the programmer doesn&#39;t have to manually allocate space. This course will foocus on explicit allocation and specifically <code>malloc()</code></p>
 <p>When using <code>free()</code> only a pointer returned by <code>malloc()</code> needs to be passed. This means the system knows how many bytes to free without knowing the size.</p>
@@ -108,7 +108,7 @@ free(ptr_array);
 <p>The block starts with an 8-byte header which contains the <code>size</code> variable which records the size of the allocated block. Since the block size is always multiples of 8 bytes, the least significant bit is used to indicate if the block is in use or not. (1 for use, 0 for free)</p>
 <p>Next is the actual space the user can use, it&#39;s starting address is returned by <code>malloc()</code>, and is called the <strong>payload</strong>. Due to how linux functions, all blocks should start from multiples of 16, so there may be some extra space of 0s called padding. 
 The minimal size of a block is 4*<code>sizeof(void*)</code> which on a 64-bit machine, is usually 32 bytes. (a pointer is 8 bytes)</p>
-        <img src="./images3923/4.png" alt="">
+        <img src="./images3923/4.png" alt="img id 4, if you see this msg email me!">
 <p>Let us look at this example</p>
 <pre><code class="lang-C"> <span class="hljs-comment">/*** mallocblock.c ***/</span>
  <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
@@ -128,9 +128,9 @@ The minimal size of a block is 4*<code>sizeof(void*)</code> which on a 64-bit ma
 <p>Figure 3.7 (see below) shows what a block looks like when freed. The header still records the size, but the in-use flag will be turned off, and the first 8 bytes become a pointer pointing to the previous freed block in the free list, and the next 8 bytes will point to the next freed block in the free list. The rest will stay untouched. </p>
 <p>Even if we call <code>free()</code>, the space is still accessible, but the data might be overwritten by pointers used by the system, the rest of the data will either be untouched or changed to 0s. </p>
 <p>Just because we can still access (read and write) to the data in the free&#39;d chunk, we should not do so, since it is very likely to cause a segmentation fault.</p>
-        <img src="./images3923/5.png" alt="">
-        <img src="./images3923/6.png" alt="">
-        <img src="./images3923/7.png" alt="">
+        <img src="./images3923/5.png" alt="img id 5, if you see this msg email me!">
+        <img src="./images3923/6.png" alt="img id 6, if you see this msg email me!">
+        <img src="./images3923/7.png" alt="img id 7, if you see this msg email me!">
 <p>When adding a free block to the free list, we need to consider the location of the block in relation to other blocks.</p>
 <p>This can be done by using the memory address of each block by traversing the free list. Since we always follow the physical location, we are using the benefits of locality.</p>
 <p>This can also be done through LIFO, which can be faster since we don&#39;t have to traverse the free list, this can be done by always adding the newly freed block to the front of the list, regardless of it&#39;s location in memory. This is O(1) time.</p>

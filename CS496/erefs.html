@@ -6,7 +6,268 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 4 - explicit refs</p>
+        <h2 id="4-1-mutable-data-structures">4.1 Mutable Data Structures</h2>
+<p>data<strong>in place</strong> means data is stored in some memory location, and is updated in the same location</p>
+<p><strong>functional update</strong> makes a fresh copy, and performs the update on the new copy.</p>
+<p>References simulate the behavior of objects. Objects are an abstraction of a state. A state has a set of operations that can access and modify the state, and the ability to reer to the state and operations within it through special variables (<code>this</code> or <code>self</code>)</p>
+<p>Math functions are relations where each element of a fomain is assigned a unique element in the codomain</p>
+<p>The following ocaml function is <strong>impure</strong>/<strong>stateful</strong>. This is because each time it is called, even with the same parameter, it can have a different result.</p>
+<pre><code class="lang-ocaml"> let f = let <span class="hljs-keyword">state</span> = ref <span class="hljs-number">0</span>
+   <span class="hljs-keyword">in</span> fun ()-&gt;
+     begin
+       <span class="hljs-keyword">state</span>:=!<span class="hljs-keyword">state</span>+<span class="hljs-number">1</span>;
+       !<span class="hljs-keyword">state</span>
+     end
+</code></pre>
+<p>When it is called, the resutls are listed below, it not the same as pure mathematical functions, as described above. It is stateful because it also relies on a hidden/internal state, which is the value in the pointer <code>state</code></p>
+<pre><code class="lang-ocaml"><span class="hljs-meta"># f ();;</span>
+- : <span class="hljs-keyword">int</span> = <span class="hljs-number">1</span>
+<span class="hljs-meta"># f ();;</span>
+- : <span class="hljs-keyword">int</span> = <span class="hljs-number">2</span>
+<span class="hljs-meta"># f ();;</span>
+- : <span class="hljs-keyword">int</span> = <span class="hljs-number">2</span>
+</code></pre>
+<p>Below is a counter object(to count) with models self reference using recursion, <code>dec</code> is implemented using<code>ing</code></p>
+<pre><code class="lang-ocaml">let c =
+ let rec this(<span class="hljs-keyword">state</span>) =
+ { inc = (fun i-&gt; <span class="hljs-keyword">state</span> := !<span class="hljs-keyword">state</span>+i);
+   dec = (fun ()-&gt; (this <span class="hljs-keyword">state</span>).inc (-<span class="hljs-number">1</span>));
+   read = (fun ()-&gt; !<span class="hljs-keyword">state</span>) }
+ <span class="hljs-keyword">in</span> let s = ref <span class="hljs-number">0</span>
+ <span class="hljs-keyword">in</span> this s
+</code></pre>
+<p>Below is a stack object implemented in ocaml</p>
+<pre><code class="lang-ocaml"> <span class="hljs-keyword">type</span> stack =
+ { push : <span class="hljs-built_in">int</span>-&gt; <span class="hljs-built_in">unit</span>;
+ pop : <span class="hljs-built_in">unit</span>-&gt; <span class="hljs-built_in">int</span>;
+ top : <span class="hljs-built_in">unit</span>-&gt; <span class="hljs-built_in">int</span>};;
+</code></pre>
+<pre><code class="lang-ocaml">let s = let <span class="hljs-keyword">state</span> = ref []
+        <span class="hljs-keyword">in</span> { push = (fun i-&gt; <span class="hljs-keyword">state</span>:= i::!<span class="hljs-keyword">state</span>);
+             pop = (fun ()-&gt; let temp = List.hd !<span class="hljs-keyword">state</span>
+                             <span class="hljs-keyword">in</span> <span class="hljs-keyword">state</span> := List.tl !<span class="hljs-keyword">state</span>; temp);
+             top = (fun ()-&gt; List.hd !<span class="hljs-keyword">state</span>)}
+</code></pre>
+<pre><code class="lang-ocaml"><span class="hljs-meta"># s.push 1;; </span>
+- : unit = ()
+<span class="hljs-meta"># s.push 2;;</span>
+- : unit = ()
+<span class="hljs-meta"># s.pop ();;</span>
+- : <span class="hljs-keyword">int</span> = <span class="hljs-number">2</span>
+<span class="hljs-meta"># s.top ();;</span>
+- : <span class="hljs-keyword">int</span> = <span class="hljs-number">1</span>
+</code></pre>
+<h2 id="4-2-explicit-refs">4.2 Explicit Refs</h2>
+<h3 id="concrete-syntax">Concrete Syntax</h3>
+<pre><code> ⟨<span class="hljs-keyword">Expression</span>⟩ ::= ⟨<span class="hljs-keyword">Number</span>⟩
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= ⟨Identifier⟩
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= ⟨<span class="hljs-keyword">Expression</span>⟩⟨BOp⟩⟨<span class="hljs-keyword">Expression</span>⟩
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= zero?(⟨<span class="hljs-keyword">Expression</span>⟩)
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= if⟨<span class="hljs-keyword">Expression</span>⟩then⟨<span class="hljs-keyword">Expression</span>⟩else⟨<span class="hljs-keyword">Expression</span>⟩
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= let⟨Identifier⟩=⟨<span class="hljs-keyword">Expression</span>⟩in⟨<span class="hljs-keyword">Expression</span>⟩
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= (⟨<span class="hljs-keyword">Expression</span>⟩)
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= proc(⟨Identifier⟩){⟨Expression⟩}
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= (⟨<span class="hljs-keyword">Expression</span>⟩⟨<span class="hljs-keyword">Expression</span>⟩)
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= letrec⟨Identifier⟩(⟨Identifier⟩)=⟨<span class="hljs-keyword">Expression</span>⟩in⟨<span class="hljs-keyword">Expression</span>⟩
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= newref(⟨<span class="hljs-keyword">Expression</span>⟩)
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= deref(⟨<span class="hljs-keyword">Expression</span>⟩)
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= setref(⟨<span class="hljs-keyword">Expression</span>⟩,⟨<span class="hljs-keyword">Expression</span>⟩)
+ ⟨<span class="hljs-keyword">Expression</span>⟩ ::= begin ⟨<span class="hljs-keyword">Expression</span>⟩∗(;) end
+ ⟨BOp⟩        ::= +|-|*|/
+</code></pre><p>The notation *(;) next to the nonterminal &lt;Expression&gt; in the production for begin/end means there can be from 0 to an  infinite amount of expressions separated by ;
+Examples of the concrete syntax</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">new</span><span class="hljs-type">ref</span>(<span class="hljs-number">2</span>)
+
+let a=<span class="hljs-keyword">new</span><span class="hljs-type">ref</span>(<span class="hljs-number">2</span>)
+  <span class="hljs-keyword">in</span> a
+let a=<span class="hljs-keyword">new</span><span class="hljs-type">ref</span>(<span class="hljs-number">2</span>)
+ <span class="hljs-keyword">in</span> deref(a)
+
+let a=<span class="hljs-keyword">new</span><span class="hljs-type">ref</span>(<span class="hljs-number">2</span>)
+  <span class="hljs-keyword">in</span> setref(a,deref(a)+<span class="hljs-number">1</span>)
+
+let a=<span class="hljs-keyword">new</span><span class="hljs-type">ref</span>(<span class="hljs-number">2</span>)
+  <span class="hljs-keyword">in</span> begin
+    setref(a,deref(a)+<span class="hljs-number">1</span>);
+     deref(a)
+  end
+
+let g =
+  let counter = <span class="hljs-keyword">new</span><span class="hljs-type">ref</span>(<span class="hljs-number">0</span>)
+  <span class="hljs-keyword">in</span> proc (d) {
+   begin
+    setref(counter, deref(counter)+<span class="hljs-number">1</span>);
+    deref(counter)
+   end
+ }
+
+<span class="hljs-keyword">in</span> (g <span class="hljs-number">11</span>)- (g <span class="hljs-number">22</span>)
+</code></pre>
+<h3 id="abstract-syntax">Abstract Syntax</h3>
+<p>The abstract syntax is listed below, and is built off of REC. New syntax is bolded.</p>
+<p>| Var of string<br>
+| Int of int<br>
+| Add of expr*expr<br>
+| Sub of expr*expr<br>
+| Mul of expr*expr<br>
+| Div of expr*expr<br>
+| Let of string*expr*expr<br>
+| IsZero of expr<br>
+| ITE of expr*expr*expr<br>
+| Proc of string*expr<br>
+| App of expr*expr<br>
+| Letrec of rdecs*expr<br>
+<strong>| NewRef of expr</strong><br>
+<strong>| DeRef of expr</strong><br>
+<strong>| SetRef of expr*expr</strong><br>
+<strong>| BeginEnd of expr list</strong><br>
+| Debug of expr</p>
+<p>EREF evaluation rules attached below</p>
+        <img src="./images4964/1.png" alt="">
+        <h3 id="interpreter-specification">Interpreter - Specification</h3>
+<p>Given a set of symbolic memory location <em>L</em>, write <em>l</em>, <em>li</em> for memory locations.
+A heap/<strong>store</strong> is a partial function from memory to expressed values. The set of stores is <em>S</em></p>
+<p><em>S</em>:= <em>L</em> -&gt; <em>EV</em></p>
+<p>The set of expressed values is</p>
+<p><em>EV</em> := <em>Z</em> U <em>B</em> U <em>U</em> U <em>CL</em> U <em>L</em></p>
+<p><em>U</em> := {unit}</p>
+<p>Evaluation judgements for EREFS (seen above), are of the form, <em>e</em> is an expression, <em>p</em> is an environment, <em>o</em> is the initial store, <em>r</em> is the result, and <em>o`</em> is the final store.</p>
+<p><em>e</em>,<em>p</em>,<em>o</em>⇓ <em>r</em>,<em>o`</em></p>
+<p>Evaluating an expression returns both a result and updated store, the evaluation rules are found above.</p>
+<p>ESetRef and ESetRefErr show how assignment works.</p>
+<p>An assignment like <code>SetRef(e1, e2)</code> is evaluated to cause an effect, usually to update the contents of the location obtained from evaluating e1 with the value obtained from evaluating e2. We don&#39;t expect to get any value back (like a void function in C/C++), but all functions must return a value. This is what the new unit serves the place of, it is effectively a placeholder value.</p>
+<h3 id="implementing-stores">Implementing Stores</h3>
+<p>The implementation of the evaluator for EREFS needs stores implemented. They will be implemented as arrays in OCaml. The interface file below declares the types of the values in the public interface of the store. (parametric constructor type <code>Store.t</code>, the type of the store, and multiple functions)</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">open</span> <span class="hljs-type">Ds</span>
+<span class="hljs-keyword">type</span> <span class="hljs-symbol">'a</span> t = { <span class="hljs-keyword">mutable</span> data: ’a <span class="hljs-built_in">array</span>; <span class="hljs-keyword">mutable</span> size: <span class="hljs-built_in">int</span>} <span class="hljs-comment">(*data is declared mutable so the store may be resized*)</span>
+
+<span class="hljs-keyword">val</span> empty_store : <span class="hljs-built_in">int</span>-&gt; ’a-&gt; ’a t =
+ <span class="hljs-keyword">fun</span> i v-&gt; { data=<span class="hljs-type">Array</span>.make i v; size=<span class="hljs-number">0</span> } <span class="hljs-comment">(*empty_store n v returns a store of size n where each element is initialized to v*)</span>
+
+<span class="hljs-keyword">val</span> get_size : ’a t-&gt; <span class="hljs-built_in">int</span> =
+ <span class="hljs-keyword">fun</span> st-&gt; st.size <span class="hljs-comment">(*get_size s returns the number of elements in the store*)</span>
+
+<span class="hljs-keyword">val</span> new_ref : ’a t-&gt; ’a-&gt; <span class="hljs-built_in">int</span> =
+ <span class="hljs-keyword">fun</span> st v-&gt;
+ <span class="hljs-keyword">let</span> new_array = <span class="hljs-type">Array</span>.make (st.size*<span class="hljs-number">2</span>) v
+ <span class="hljs-keyword">in</span> <span class="hljs-type">Array</span>.blit st.data <span class="hljs-number">0</span> new_array <span class="hljs-number">0</span> st.size;
+ st.data&lt;-new_array <span class="hljs-comment">(*new_ref s v stores v in a fresh location and returns the location*)</span>
+
+<span class="hljs-keyword">val</span> deref: ’a t-&gt; <span class="hljs-built_in">int</span>-&gt; ’a ea_result  =
+ <span class="hljs-keyword">fun</span> st l -&gt;
+ <span class="hljs-keyword">if</span> l&gt;=st.size
+ <span class="hljs-keyword">then</span> error <span class="hljs-string">"Index out of bounds"</span>
+ <span class="hljs-keyword">else</span> return (st.data.(l)) <span class="hljs-comment">(*deref s l returns the contents of location l, prefixed by Some, in the store s. This operation fails, returning None, if the location is out of bounds*)</span>
+
+<span class="hljs-keyword">val</span> set_ref : ’a t-&gt; <span class="hljs-built_in">int</span>-&gt; ’a-&gt; <span class="hljs-built_in">unit</span> ea_result  =
+ <span class="hljs-keyword">fun</span> st l v-&gt;
+ <span class="hljs-keyword">if</span> l&gt;=st.size
+ <span class="hljs-keyword">then</span> error <span class="hljs-string">"Index out of bounds"</span>
+ <span class="hljs-keyword">else</span> return (st.data.(l)&lt;-v) <span class="hljs-comment">(*set_ref s l v updates the contents of l in s with v. It fails, returning None, if the index is out of bounds.*)</span>
+
+<span class="hljs-keyword">let</span> <span class="hljs-keyword">rec</span> take n = <span class="hljs-keyword">function</span>
+ | <span class="hljs-literal">[]</span>-&gt; <span class="hljs-literal">[]</span>
+ | x::xs <span class="hljs-keyword">when</span> n&gt;<span class="hljs-number">0</span>-&gt; x::take (n-<span class="hljs-number">1</span>) xs
+ | _-&gt; <span class="hljs-literal">[]</span>
+
+<span class="hljs-keyword">val</span> string_of_store : (’a-&gt; <span class="hljs-built_in">string</span>)-&gt; ’a t-&gt; <span class="hljs-built_in">string</span> 
+ <span class="hljs-keyword">let</span> ss = <span class="hljs-type">List</span>.mapi (<span class="hljs-keyword">fun</span> i x-&gt; string_of_int i^<span class="hljs-string">"-&gt;"</span>^f x) @@ take st.size @@ <span class="hljs-type">Array</span>.to_list st.data
+ <span class="hljs-keyword">in</span>
+ <span class="hljs-type">String</span>.concat <span class="hljs-string">",\n"</span> ss
+<span class="hljs-comment">(*string_of_store to_str s returns a string representation of s resulting from applying to_str
+ to each element.*)</span>
+
+<span class="hljs-keyword">let</span> string_of_store f st =
+ <span class="hljs-keyword">match</span> st.size <span class="hljs-keyword">with</span>
+ | <span class="hljs-number">0</span>-&gt; <span class="hljs-string">"&gt;&gt;Store:\nEmpty"</span>
+ | _-&gt; <span class="hljs-string">"&gt;&gt;Store:\n"</span>^ string_of_store’ f st
+</code></pre>
+<h3 id="interpeter-implementation">Interpeter - Implementation</h3>
+<p>If we were to handle the stores in the background, including its other data types, it is a <strong>state monad</strong> and we would have a combination of error reader and state monads. Combining monads can be done through <strong>monad transformers</strong></p>
+<p>Though we aren&#39;t. We will be holding the store as a global variable <code>g_store</code></p>
+<p><code>g_store</code> declares a store of size <code>20</code> where all valeus are initialized to <code>NumVal 0</code></p>
+<p>Locations are denoted by an integer wrapped in a <code>RefVal</code> constructor. Ex; <code>RefVal 7 5 2</code> points to location <code>7</code> in memory.</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">type</span> exp_val =
+| <span class="hljs-type">NumVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">int</span>
+| <span class="hljs-type">BoolVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">bool</span>
+| <span class="hljs-type">ProcVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">string</span>*<span class="hljs-built_in">expr</span>*env
+| <span class="hljs-type">UnitVal</span>
+| <span class="hljs-type">RefVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">int</span>
+</code></pre>
+<p>Here are the extra variants to the interpreter</p>
+<pre><code class="lang-ocaml">
+let rec eval_expr : expr-&gt; exp_val ea_result =
+  <span class="hljs-function"><span class="hljs-keyword">fun</span> e-&gt;</span>
+  match e with
+  | NewRef(e)-&gt;
+    eval_expr e &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> ev-&gt;</span>
+    <span class="hljs-keyword">return</span> (RefVal (Store.new_ref g_store ev))
+  | DeRef(e)-&gt;
+    eval_expr e &gt;&gt;=
+    int_of_refVal &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> l-&gt;</span>
+    Store.deref g_store l
+  | SetRef(e1,e2)-&gt;
+    eval_expr e1 &gt;&gt;=
+    int_of_refVal &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> l-&gt;</span>
+    eval_expr e2 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> ev-&gt;</span>
+    Store.set_ref g_store l ev &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> _-&gt;</span>
+    <span class="hljs-keyword">return</span> UnitVal
+  | BeginEnd([])-&gt;
+    <span class="hljs-keyword">return</span> UnitVal
+  | BeginEnd(es)-&gt;
+    eval_exprs es &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> evs-&gt;</span>
+    <span class="hljs-keyword">return</span> (List.hd (List.rev evs))
+  | Debug(_e)-&gt;
+    string_of_env &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> str_env-&gt;</span>
+    let str_store = Store.string_of_store string_of_expval g_store
+    <span class="hljs-keyword">in</span> (print_endline (str_env^<span class="hljs-string">"\n"</span>^str_store);
+    error <span class="hljs-string">"Debug called"</span>)
+  | _-&gt; failwith (<span class="hljs-string">"Not implemented: "</span>^string_of_expr e)
+and
+ eval_exprs =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> es-&gt;</span>
+ match es with
+ | []-&gt; <span class="hljs-keyword">return</span> []
+ | h::t-&gt;
+   eval_expr h &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> ev-&gt;</span>
+   eval_exprs t &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> evs-&gt;</span>
+   <span class="hljs-keyword">return</span> (ev::evs)
+</code></pre>
+<p><strong>Extended Example: Encoding Objects</strong></p>
+<p>Here is EREFS with records</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> c = <span class="hljs-keyword">let</span> s = newref(<span class="hljs-number">0</span>)
+        in
+         {
+          inc = <span class="hljs-function"><span class="hljs-keyword">proc</span> <span class="hljs-params">(d)</span> { <span class="hljs-title">setref</span><span class="hljs-params">(s,deref(s)</span>+<span class="hljs-title">d</span>) }</span>;
+          read = <span class="hljs-function"><span class="hljs-keyword">proc</span> <span class="hljs-params">(x)</span> { <span class="hljs-title">deref</span><span class="hljs-params">(s)</span> }</span>;
+          reset = <span class="hljs-function"><span class="hljs-keyword">proc</span> <span class="hljs-params">(d)</span> { <span class="hljs-title">setref</span><span class="hljs-params">(s,<span class="hljs-number">0</span>)</span> }
+         }
+<span class="hljs-title">in</span> <span class="hljs-title">begin</span>
+     <span class="hljs-params">(c.inc <span class="hljs-number">1</span>)</span></span>;
+     (c.inc <span class="hljs-number">2</span>);
+     (c.read <span class="hljs-number">0</span>)
+  <span class="hljs-keyword">end</span>
+</code></pre>
+<pre><code class="lang-ocaml">letrec <span class="hljs-keyword">self</span>(s) =
+           { inc = proc (d) { setref(s,deref(s)+d) };
+             read = proc (x) { deref(s) };
+             reset = proc (d) {
+                     <span class="hljs-keyword">let</span> current = ((<span class="hljs-keyword">self</span> s).read <span class="hljs-number">0</span>)
+                     <span class="hljs-keyword">in</span> ((<span class="hljs-keyword">self</span> (s)).inc (-current))}
+           }
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> new_counter = proc(<span class="hljs-keyword">init</span>) {
+                       <span class="hljs-keyword">let</span> s = newref(<span class="hljs-keyword">init</span>)
+                       <span class="hljs-keyword">in</span> (<span class="hljs-keyword">self</span> s)
+                      }
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> <span class="hljs-built_in">c</span>= (new_counter <span class="hljs-number">0</span>)
+<span class="hljs-keyword">in</span> begin
+   (<span class="hljs-built_in">c</span>.inc <span class="hljs-number">1</span>);
+   (<span class="hljs-built_in">c</span>.inc <span class="hljs-number">2</span>);
+   (<span class="hljs-built_in">c</span>.reset <span class="hljs-number">0</span>);
+   (<span class="hljs-built_in">c</span>.read <span class="hljs-number">0</span>)
+end
+</code></pre>
+
     </main>
   </body>
 </html>

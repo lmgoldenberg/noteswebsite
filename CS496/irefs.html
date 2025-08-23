@@ -6,7 +6,200 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 4 - implicit refs</p>
+        <h2 id="4-3-implicit-refs">4.3 IMPLICIT-REFS</h2>
+<p>IMPLICIT-REFS(irefs) is built off of REC</p>
+<p>The main concept is that unlike in erefs, where the environment maps the id to an expressed value. In irefs, the environment maps the id to a location which stores the expressed value</p>
+<h3 id="4-3-1-concrete-syntax">4.3.1 Concrete Syntax</h3>
+<p>Here are some examples of irefs</p>
+<pre><code class="lang-ocaml"> <span class="hljs-keyword">let</span> x=2
+ <span class="hljs-keyword">in</span> <span class="hljs-keyword">begin</span>
+   <span class="hljs-keyword">set</span> x=3;
+   x
+   <span class="hljs-keyword">end</span>
+ <span class="hljs-keyword">let</span> x=2
+ <span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> y=x+1
+ <span class="hljs-keyword">in</span> <span class="hljs-keyword">begin</span>
+ <span class="hljs-keyword">set</span> y=y+1;
+    y
+    <span class="hljs-keyword">end</span>
+ <span class="hljs-keyword">let</span> x=2
+ <span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> f = proc (n) { <span class="hljs-keyword">begin</span> <span class="hljs-keyword">set</span> x=x+1; 1 <span class="hljs-keyword">end</span> }
+ <span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> g = proc (n) { <span class="hljs-keyword">begin</span> <span class="hljs-keyword">set</span> x=x+1; 2 <span class="hljs-keyword">end</span> }
+ <span class="hljs-keyword">in</span> <span class="hljs-keyword">begin</span>
+   (f 0)+(g 0);
+   x
+ <span class="hljs-keyword">end</span>
+</code></pre>
+<p>irefs has the following concerete syntax, new additions since REC are in bold.
+⟨Expression⟩ ::= ⟨Number⟩
+ ⟨Expression⟩ ::= ⟨Identifier⟩
+ ⟨Expression⟩ ::= ⟨Expression⟩⟨BOp⟩⟨Expression⟩
+ ⟨Expression⟩ ::= zero?(⟨Expression⟩)
+ ⟨Expression⟩ ::= if⟨Expression⟩then⟨Expression⟩else⟨Expression⟩
+ ⟨Expression⟩ ::= let⟨Identifier⟩=⟨Expression⟩in⟨Expression⟩
+ ⟨Expression⟩ ::= (⟨Expression⟩)
+ ⟨Expression⟩ ::= proc(⟨Identifier⟩){⟨Expression⟩}
+ ⟨Expression⟩ ::= (⟨Expression⟩⟨Expression⟩)
+ ⟨Expression⟩ ::= letrec{⟨Identifier⟩(⟨Identifier⟩)=⟨Expression⟩}+ in⟨Expression⟩
+ <strong>⟨Expression⟩ ::= set⟨Identifier⟩=⟨Expression⟩</strong>
+<strong>⟨Expression⟩ ::= begin ⟨Expression⟩+(;) end</strong>
+⟨BOp⟩ ::= +|-|*|/</p>
+<h3 id="4-3-2-abstract-syntax">4.3.2 Abstract Syntax</h3>
+<p>irefs has the following abstract syntax, new additions since REC are in bold.</p>
+<p>type expr =<br>
+ | Var of string<br>
+ | Int of int<br>
+ | Add of expr*expr<br>
+ | Sub of expr*expr<br>
+ | Mul of expr*expr<br>
+ | Div of expr*expr<br>
+ | Let of string*expr*expr<br>
+ | IsZero of expr<br>
+ | ITE of expr*expr*expr<br>
+ | Proc of string*expr<br>
+ | App of expr*expr<br>
+ | Letrec of rdecs*expr<br>
+ <strong>| Set of string*expr</strong><br>
+ <strong>| BeginEnd of expr list</strong><br>
+ | Debug of expr<br>
+and
+ rdecs = (string*string*texpr option*texpr option*expr) list</p>
+<p>The new judgement rules added on top of REC(with alterations to fit the new format) are in figure 4.2 (below)</p>
+        <img src="./images4964/2.png" alt="">
+<h3 id="4-3-3-interpreter">4.3.3 Interpreter</h3>
+<p><strong>4.3.3.1 Specification</strong></p>
+<p>In irefs all identifiers are mutable.
+The environment will map all identifiers to locations in the store.</p>
+<p>The evaluation judgements take the form</p>
+<p><em>e</em>, <em>p</em>, <em>o</em> ⇓ <em>r</em>, <em>o`</em></p>
+<p><em>e</em> is an expression
+<em>p</em> is an environment
+<em>o</em> is the initial store
+<em>r</em> is the result
+<em>o&#39;</em> is the final store</p>
+<p>Unlike erefs where <em>p</em> maps identifiers to expressed values, in irefs <em>p</em> maps identifiers to location</p>
+<p>Look at EVar in 4.2 (above), this rule reflects that change, the identifier lookup first has to lookup the location first, and then access the contents in the store.</p>
+<p><em>p</em>(id) denotes a location whose contents is looked up in the store <em>o</em>. If <em>p</em>(id) is not a valid location, an error is returned using EVarERR</p>
+<h3 id="4-3-4-updating-letrec-">4.3.4 Updating <code>letrec</code></h3>
+<p><code>letrec</code> in REC added a specific entry to the environment to declare a function recursive. Then once looked up, a closure is created on the fly.</p>
+<p>We solve the need to create closures on the fly using circular environments.
+A circular environment is an environment <code>env</code> that has an entry to location <code>l</code> on the store, which also holds a closure whose environment also has a reference to <code>l</code>. (see my super cool ms paint on it below)</p>
+<p>The new <code>letrec</code> is as follows</p>
+<pre><code class="lang-ocaml"> let rec eval_expr : expr-&gt; exp_val ea_result =
+   <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">e</span></span>-&gt;
+   match e <span class="hljs-keyword">with</span>
+   | Letrec([(id,par,_,_,e)],target)-&gt;
+     let l = Store.new_ref g_store UnitVal in
+     extend_env id (RefVal l) &gt;&gt;+
+     (lookup_env &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">env</span></span>-&gt;
+      Store.set_ref g_store l (ProcVal(par,e,env)) &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">_</span></span>-&gt;
+      eval_expr target
+     )
+</code></pre>
+        <img src="./images4964/3.png" alt="">
+<h2 id="4-4-parameter-passing-methods">4.4 Parameter Passing Methods</h2>
+<p>There are several parameter passing methods in irefs, there are languages in the <code>PLaF/src</code> file that represent them, all of them are forks of irefs.</p>
+<h3 id="4-4-1-call-by-value">4.4.1 Call by value</h3>
+<p>This is the standard parameter passing method that has been used for all languages taught, it does not have it&#39;s own language in <code>PLaF/src</code> because the <code>implicit-refs</code> language is using it. Passing a variable to a function will not update the value of the variable outside of that function. </p>
+<h3 id="4-4-2-call-by-reference">4.4.2 Call by reference</h3>
+<p>If the argument to a function is a variable, we will give a copy of it&#39;s reference to the function. Passing a variable to a function will update the value of the variable outside of that function</p>
+<p>ex:</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> x = 2
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> f = proc (z) { <span class="hljs-keyword">set</span> z = z+1 }
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">begin</span>
+   (f x);
+   x
+  <span class="hljs-keyword">end</span>
+</code></pre>
+<p>This will return <code>(NumVal 2)</code> in irefs because the value of x is checked after the function has happened.
+In call by reference, this will instead return 3 because we are updating the value at the reference in memory, not the value passed into the function.</p>
+<p>The evaluation rules are the same as in 4.2 (above), but EApp is replaced by EApp1 and EApp2 as seen in 4.3 (below), EApp1 is just EApp, EApp2 applies when the argument of an App is an identifier. In that case, no allocation takes place on the store.</p>
+<p>The new code for pass by reference is as follows</p>
+<pre><code class="lang-ocaml"><span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">e</span></span>-&gt;
+ match e <span class="hljs-keyword">with</span>
+ | Var(id)-&gt; apply_env id
+ | _-&gt; eval_expr e &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">ev</span></span>-&gt;
+ <span class="hljs-keyword">return</span> (RefVal (Store.new_ref g_store ev))
+and
+ apply_clos =
+ ...
+and
+ eval_expr : expr-&gt; exp_val ea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">e</span></span>-&gt;
+ match e <span class="hljs-keyword">with</span>
+ ...
+ | App(e1,e2)-&gt;
+   eval_expr e1 &gt;&gt;=
+   clos_of_procVal &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">clos</span></span>-&gt;
+    value_ofoperand e2 &gt;&gt;=
+    apply_clos clos
+</code></pre>
+        <img src="./images4964/4.png" alt="">
+<h3 id="call-by-name">Call by name</h3>
+<p>In call by name, parameters once passed are freezed until they are actually needed. In <code>App(e1, e2)</code>, if <code>e2</code> is an identifier, it is just like call by reference, where a copy of the address is passed in, and it is looked up in the environment. Copying an address is a constant time operation, so it isn&#39;t an issue. Though if <code>e2</code> is an expression, it&#39;s evaluation does not take place but rather <code>e2</code> and it&#39;s current environment are stored for later.</p>
+<p>The pair that stores <code>e2</code> and it&#39;s current environment is a <strong>thunk</strong>. It is structured like Thunk(x+2, [x=NumVal 3])</p>
+<p>The evaluation rules for Call by name are the same as irefs (4.2 above), but EApp is replaced with the new rules in 4.5 (below). </p>
+<p>To implement call by name, we can update call by reference by adding <code>Thunk</code> to exp_val</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">type</span> exp_val =
+ | <span class="hljs-type">NumVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">int</span>
+ | <span class="hljs-type">BoolVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">bool</span>
+ | <span class="hljs-type">ProcVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">string</span>*<span class="hljs-built_in">expr</span>*env
+ | <span class="hljs-type">UnitVal</span>
+ | <span class="hljs-type">Thunk</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">expr</span>*env
+</code></pre>
+<p>then update <code>value_of_operand</code> such that if the argument passed is a variable, behave like call by reference, else create a thunk.</p>
+<pre><code class="lang-ocaml">let rec value_of_operand =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">op</span></span>-&gt;
+ match op <span class="hljs-keyword">with</span>
+ | Var id-&gt; apply_env id
+ | _-&gt;
+   lookup_env &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">en</span></span>-&gt;
+   <span class="hljs-keyword">return</span> (RefVal (Store.new_ref g_store (Thunk(op, en))))
+</code></pre>
+<p>last, we add the ability to thaw(use) <code>Thunk(e, en)</code> by evaluating <code>e</code> under the environment <code>en</code></p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> rec eval_expr : expr-&gt; exp_val ea_result =
+ <span class="hljs-keyword">fun</span> e-&gt;
+ <span class="hljs-keyword">match</span> e <span class="hljs-built_in">with</span>
+   | <span class="hljs-type">Int</span>(n)-&gt; <span class="hljs-keyword">return</span> (NumVal n)
+   | <span class="hljs-type">Var</span>(id)-&gt;
+     apply_env id &gt;&gt;=
+     int_of_refVal &gt;&gt;=
+     Store.deref g_store &gt;&gt;= <span class="hljs-keyword">fun</span> ev-&gt;
+     (<span class="hljs-keyword">match</span> ev <span class="hljs-built_in">with</span>
+       | <span class="hljs-type">Thunk</span>(e,en)-&gt; <span class="hljs-keyword">return</span> en &gt;&gt;+ eval_expr e
+       | <span class="hljs-type">_</span>-&gt; <span class="hljs-keyword">return</span> ev)
+...
+</code></pre>
+        <img src="./images4964/5.png" alt="">
+<h3 id="call-by-need">Call by need</h3>
+<p>A drawback of call by name is a thunk is thawed every time it is needed.</p>
+<p>In call by name, running this program will compute the factorial of 5 a total of 4 times, 1 for each time <code>y</code> is used in <code>g</code></p>
+<pre><code class="lang-ocaml"><span class="hljs-title">letrec</span> f(x) = <span class="hljs-keyword">if</span> zero?(x) <span class="hljs-keyword">then</span> <span class="hljs-number">1</span> <span class="hljs-keyword">else</span> x*(f (x<span class="hljs-number">-1</span>))
+ <span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> g = <span class="hljs-keyword">proc</span> (y) { y+y+y+y }
+ <span class="hljs-keyword">in</span> (g (f <span class="hljs-number">5</span>))
+</code></pre>
+<p>We can apply memoization from CS115 to optimize this.  In our case we will store the thawed value in the environment. Think of it kinda like caching from 382</p>
+<pre><code class="lang-ocaml"> let rec eval_expr : expr-&gt; exp_val ea_result =
+  <span class="hljs-function"><span class="hljs-keyword">fun</span> e -&gt;</span>
+   match e with
+   | <span class="hljs-built_in">Int</span>(n)-&gt; <span class="hljs-keyword">return</span> @@ NumVal n
+   | Var(id)-&gt;
+     apply_env id &gt;&gt;=
+     int_of_refVal &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> l-&gt;</span>
+     Store.deref g_store l &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> ev-&gt;</span>
+     (match ev with
+       | Thunk(e,en)-&gt;
+         <span class="hljs-keyword">return</span> en &gt;&gt;+
+         eval_expr e &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> ev-&gt;</span>
+         Store.set_ref g_store l ev &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> _-&gt;</span>
+         <span class="hljs-keyword">return</span> ev
+       | _-&gt; <span class="hljs-keyword">return</span> ev)
+ ...
+</code></pre>
+<p>In call by need, the first example above will only compute the factorial of 5 only 1 time.</p>
+<p>Note that sometimes call by need and call by name may sometimes return different results as a result of how they operate.
+(ex, evaluating something with a print statement will cause it to print, since call by need only evaluates once, it will only be printed once, while in call by need it will be printed twice)</p>
+
     </main>
   </body>
 </html>

@@ -92,7 +92,7 @@ The set of all recursion closures is <em>RCL</em></p>
 <h3 id="specification">Specification</h3>
 <p>The set of results and evaluation judgements in RET is the same as PROC</p>
 <p>These are <em>R</em> := <em>EV</em> U {<em>error</em>} and <em>e</em>,<em>p</em>⇓<em>r</em> where <em>r</em>  ∈ <em>R</em> respectively.</p>
-        <img src="./images4963/5.png" alt="">
+        <img src="./images4963/5.png" alt="img id 5, if you see this msg email me!">
 <p>Evaluation rules for REC is PROC and the ones above. 
 <code>ELetRec</code> created a recursion closure and adds it to the current environment <em>p</em>, and continues with the evaluation of <em>e2</em>. 
 The rule <code>EVarLetRec</code> looks up identifiers that refer to previously declared recursive functions, and once finding the corresponding one in the current environment, it creates a new closure and returns it. The new closure includes an environment that has a reference to <code>f</code> itself.</p>

@@ -6,7 +6,171 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 5 - checked</p>
+        <h1 id="5-1-checked">5.1 Checked</h1>
+<p><strong>CHECKED</strong> is built off of REC, it does not have stuff from Explicit or Implicit refs.</p>
+<h2 id="5-1-1-concrete-syntax">5.1.1 Concrete Syntax</h2>
+<p>CHECKED has the following concrete syntax</p>
+<p>⟨Expression⟩ ::= ⟨Number⟩<br>
+⟨Expression⟩ ::= ⟨Identifier⟩<br>
+⟨Expression⟩ ::= ⟨Expression⟩⟨BOp⟩⟨Expression⟩<br>
+⟨Expression⟩ ::= zero?(⟨Expression⟩)<br>
+⟨Expression⟩ ::= if⟨Expression⟩ then⟨Expression else⟨Expression⟩<br>
+⟨Expression⟩ ::= let⟨Identifier⟩=⟨Expression⟩in⟨Expression⟩<br>
+⟨Expression⟩ ::= (⟨Expression⟩)<br>
+⟨Expression⟩ ::= proc(⟨Identifier⟩:⟨Type⟩){⟨Expression⟩}<br>
+⟨Expression⟩ ::= (⟨Expression⟩⟨Expression⟩)<br>
+⟨Expression⟩ ::= letrec{⟨Identifier⟩(⟨Identifier⟩:⟨Type⟩):⟨Type⟩=⟨Expression⟩}^+ in⟨Expression⟩</p>
+<p>⟨BOp⟩  ::= +|-|*|/</p>
+<p>⟨Type⟩ ::= int<br>
+⟨Type⟩ ::= bool<br>
+⟨Type⟩ ::= ⟨Type⟩-&gt;⟨Type⟩<br>
+⟨Type⟩  ::= (⟨Type⟩)</p>
+<h2 id="5-1-2-abstract-syntax">5.1.2 Abstract Syntax</h2>
+<p>CHECKED has the following abstract syntax</p>
+<p> type expr = <br>
+ | Var of string <br>
+ | Int of int <br>
+ | Sub of expr*expr <br>
+ | Let of string*expr*expr <br>
+ | IsZero of expr <br>
+ | ITE of expr*expr*expr <br>
+ | Proc of string*<strong>texpr option</strong>*expr <br>
+ | App of expr*expr <br>
+ | Letrec of rdecs*expr<br>
+and
+rdecs = (string*string*<strong>texpr option</strong>*<strong>texpr option</strong>*expr) list<br>
+and<br>
+ texpr = <br>
+ | IntType<br>
+ | BoolType<br>
+ | FuncType of texpr*texpr</p>
+ <h2 id="5-1-3-type-checker">5.1.3 Type Checker</h2>
+<p>The specification of the type checker is a <strong>type system</strong></p>
+<h3 id="5-1-3-1-specification">5.1.3.1 Specification</h3>
+<p>A type system is an inductive set that helps identify the subset of expressions that are <strong>well-typed</strong> or <strong>typable</strong></p>
+<p>The elements of the set are called <strong>typing judgements</strong></p>
+<p>Which typing judgements belong to the set and which don&#39;t is decided by a set of <strong>typing rules</strong></p>
+<p>A typing judgement is an expression of form <em>T</em> |- <em>e</em>:<em>t</em></p>
+<p><em>T</em> is a type environment, <em>e</em> is an expression in CHECKED, and <em>t</em> is a type expression.</p>
+<p>A <strong>type environment</strong> is a partial function that assigns a type to an identifier. They are required for typing expressions that have free variables.</p>
+<p>Ex: an expression x+2 will require us to know the type of x in order to determine if it&#39;s possible. If x = <code>true</code>, 2+true isn&#39;t possible, so it isn&#39;t typable, but if x=<code>int</code>, then it is possible, so it is typable.</p>
+<p>Type environments are defined as</p>
+<p><em>T</em> ::= <em>c</em> | <em>T</em>, <em>id</em>: <em>t</em></p>
+<p><em>c</em> is the empty type environment
+<em>T</em>, <em>id</em>:<em>t</em> assigns type <em>t</em> to identifier <em>id</em>, and behaves as <em>T</em> for identifies from other <em>id</em>s.</p>
+<p>Assume <em>T</em> doesn&#39;t have repeated entries for the same identifier</p>
+<p>An example of a type environment is <em>c</em>,<em>x</em>:<code>int</code><em>y</em>:<code>bool</code></p>
+<p>The typing rules are given below, the rules for addition subtraction and division are omitted, they are like TSub</p>
+<p>An expression <em>e</em> is typable if there is a typing environment <em>T</em> and a type <em>t</em> such that the typing judgement <em>T</em>|-<em>e</em>:<em>t</em> is derivable using the typing rules, or else it is untypable.</p>
+<p>An example of a typing derivation is
+Consider the typing judgement <em>c</em>|-letrec f(<em>x</em>:int):int = <em>e</em> in (f 5) : int
+where <em>e</em> stands for if zero?(<em>x</em>) then 1 else <em>x**(f (</em>x*-1)). A typing derivation for it is attached below.</p>
+        <img src="./images4965/1.png" alt="">
+        <img src="./images4965/2.png" alt="">
+<p><strong>5.1.3.2 Towards an Implementation</strong></p>
+<p>The type checker is similar to an interpreter, instead of manipulating runtime values (ex integers &amp; booleans), it manipulates types (ex <code>int</code> &amp; <code>bool</code>).</p>
+<p>the type of the type checker is</p>
+<p><code>chk_expr : expr -&gt; texpr ea_result</code></p>
+<p>given an expression, return a function that given a type environment, will return either a type or an error.</p>
+<p>Note <code>ea_result</code> abstracts environments, but not type environments. It&#39;s type is <code>type &#39;a ea_result = env -&gt; &#39;a result</code></p>
+<p>To make <code>ea_result</code> abstract type environments, we update <code>a_result</code> (abstracted result) to be more general</p>
+<p><code>type (&#39;a, &#39;b) a_result = &#39;b -&gt; &#39;a result</code></p>
+<p>the new <code>a_result</code> is parameterized over 2 types
+<code>a</code> is the type of the result of the computation
+<code>b</code> is the type of function type being abstracted over</p>
+<p>Below is the new <code>a_result</code> type implemented</p>
+<pre><code class="lang-ocaml"> <span class="hljs-keyword">type</span> ’a result = Ok <span class="hljs-keyword">of</span> ’a | Error <span class="hljs-keyword">of</span> string
+
+ <span class="hljs-keyword">type</span> (’a,’b) a_result = ’b-&gt; ’a result
+
+ let <span class="hljs-keyword">return</span> : ’a-&gt; (’a,’b) a_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">v</span></span>-&gt;
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">env</span></span>-&gt; Ok v
+
+ let error : string-&gt; (’a,’b) a_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">s</span></span>-&gt;
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">env</span></span>-&gt; Error s
+
+ let (&gt;&gt;=) : (’a,’c) a_result-&gt; (’a-&gt; (’b,’c) a_result)-&gt; (’b,’c) a_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">c</span></span> f-&gt;
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">env</span></span>-&gt;
+ match c env <span class="hljs-keyword">with</span>
+ | Error err-&gt; Error err
+ | Ok v-&gt; f v env
+
+let (&gt;&gt;+) : (’b,’b) a_result-&gt; (’a,’b) a_result &gt; (’a,’b) a_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">c</span></span> d-&gt;
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">env</span></span>-&gt;
+ match c env <span class="hljs-keyword">with</span>
+ | Error err-&gt; Error err
+ | Ok newenv-&gt; d newenv
+</code></pre>
+<p>The only differience in this new implementaiton is the types of the supporting operations <code>return</code>, <code>error</code>, <code>(&gt;&gt;=)</code>, and <code>(&gt;&gt;+)</code> are different, their code is the same.</p>
+<p><code>ea_result</code> and <code>tea_result</code> now have the following types
+<code>type ’a ea_result = (’a,env) a_result</code>
+<code>type ’a tea_result = (’a,tenv) a_result</code></p>
+<p><strong>5.1.3.3 Implementation</strong></p>
+<p>In the Letrec case of the implementation,  <code>&gt;&gt;+</code> is left associative, the mapping param <code>:= tPar</code> is added to the typing environment only for type checking body</p>
+<pre><code>let rec chk_expr : expr-&gt; texpr tea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> e-&gt;</span>
+ match e with
+| <span class="hljs-built_in">Int</span> _n-&gt; <span class="hljs-keyword">return</span> IntType
+| Var id-&gt; apply_tenv id
+| IsZero(e)-&gt;
+   chk_expr e &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t-&gt;</span>
+   <span class="hljs-keyword">if</span> t=IntType
+   then <span class="hljs-keyword">return</span> BoolType
+   <span class="hljs-keyword">else</span> error <span class="hljs-string">"isZero: expected argument of type int"</span>
+ | Add(e1,e2) | Sub(e1,e2) | Mul(e1,e2)| Div(e1,e2)-&gt;
+   chk_expr e1 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t1-&gt;</span>
+   chk_expr e2 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t2-&gt;</span>
+   <span class="hljs-keyword">if</span> (t1=IntType &amp;&amp; t2=IntType)
+   then <span class="hljs-keyword">return</span> IntType
+   <span class="hljs-keyword">else</span> error <span class="hljs-string">"arith: arguments must be ints"</span>
+ | ITE(e1,e2,e3)-&gt;
+   chk_expr e1 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t1-&gt;</span>
+   chk_expr e2 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t2-&gt;</span>
+   chk_expr e3 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t3-&gt;</span>
+   <span class="hljs-keyword">if</span> (t1=BoolType &amp;&amp; t2=t3)
+   then <span class="hljs-keyword">return</span> t2
+   <span class="hljs-keyword">else</span> error <span class="hljs-string">"ITE: condition not bool/types of then-else do not match"</span>
+ | Let(id,e,body)-&gt;
+   chk_expr e &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t-&gt;</span>
+   extend_tenv id t &gt;&gt;+
+   chk_expr body
+ | Proc(<span class="hljs-keyword">var</span>,t1,e)-&gt;
+   extend_tenv <span class="hljs-keyword">var</span> t1 &gt;&gt;+
+   chk_expr e &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t2-&gt;</span>
+   <span class="hljs-keyword">return</span> (FuncType(t1,t2))
+ | App(e1,e2)-&gt;
+   chk_expr e1 &gt;&gt;=
+   pair_of_funcType <span class="hljs-string">"app: "</span> &gt;&gt;= <span class="hljs-function"><span class="hljs-title">fun</span> <span class="hljs-params">(t1,t2)</span></span>-&gt;
+   chk_expr e2 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t3-&gt;</span>
+   <span class="hljs-keyword">if</span> t1=t3
+   then <span class="hljs-keyword">return</span> t2
+   <span class="hljs-keyword">else</span> error <span class="hljs-string">"app: type of argument incorrect"</span>
+ | Letrec([(_id,_param,None,_,_body)],_target)
+ | Letrec([(_id,_param,_,None,_body)],_target)-&gt;
+   error <span class="hljs-string">"letrec: type declaration missing"</span>
+ | Letrec([(id,param,Some tPar,Some tRes,body)],target)-&gt;
+   extend_tenv id (FuncType(tPar,tRes)) &gt;&gt;+
+   (extend_tenv param tPar &gt;&gt;+
+   chk_expr body &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> t-&gt;</span>
+   <span class="hljs-keyword">if</span> t=tRes
+   then chk_expr target
+   <span class="hljs-keyword">else</span> error <span class="hljs-string">"LetRec: Type of rec. function does not match declaration"</span>)
+ | Debug(_e)-&gt;
+   string_of_tenv &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> str-&gt;</span>
+   print_endline str;
+   error <span class="hljs-string">"Debug: reached breakpoint"</span>
+ | _-&gt; failwith <span class="hljs-string">"chk_expr: implement"</span>
+and
+ chk_prog (AProg(_,e)) =
+ chk_expr e
+</code></pre><p>Usage ex:</p>
+<pre><code># chk <span class="hljs-string">"let add = proc(x:int){proc(y:int){x+y}}in(add 1)"</span>;;
+- : <span class="hljs-type">texpr</span> <span class="hljs-keyword">ReM</span>.result = Ok (FuncType (IntType, IntType))
+</code></pre>
     </main>
   </body>
 </html>

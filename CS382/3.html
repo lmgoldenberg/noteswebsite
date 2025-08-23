@@ -13,8 +13,8 @@ is able to store data temporarily and perform arithmetic calculations</p>
 <p>4 logic gates: and, or, xor/exclusive or, not</p>
 <p>the delay between the change in inputs and the result becoming <code>1</code> is the <strong>rising delay</strong></p>
 <p>the delay between  the change in inputs and the output becoming <code>0</code> is the <strong>falling delay</strong></p>
-        <img src="./images3823/1.png" alt="">
-        <img src="./images3823/2.png" alt="">
+        <img src="./images3823/1.png" alt="img id 1, if you see this msg email me!">
+        <img src="./images3823/2.png" alt="img id 2, if you see this msg email me!">
         <h3 id="3-1-2-combinational-logic">3.1.2 Combinational Logic</h3>
 <p><strong>Combinational logic</strong> is when logic gates are combined in one direction with no loops</p>
 <p>Checking if two different bits are equal is easy, however to check if two larger data types (ex: double words) are equal, you must use <strong>buses</strong> in order to easily transfer data from one input into multiple logic gates that check each bit individually. </p>
@@ -30,7 +30,7 @@ When the control signal is  <code>0</code> the signal is <strong>deasserted/clea
 The output will also require a <strong>carry-out flag</strong> <code>cout</code></p>
 <p>This is effectively allowing you to add up to 3 numbers, truth table attached below. This is important when adding larger values.</p>
 <p>The smallest carry out flag will usually be <code>0</code>, and the largest carry-out flag will be sent to the CSPR&#39;s carry flag.</p>
-<img src="./images3823/3.png" alt="">
+<img src="./images3823/3.png" alt="img id 3, if you see this msg email me!">
 <h3 id="3-1-3-sequential-logic">3.1.3 Sequential Logic</h3>
 <p>Used to store data</p>
 <p>A <strong>bistable element</strong> does not have any cycles and has two outputs, <code>p</code> and <code>q</code>, and an input <code>in</code>.</p>
@@ -39,7 +39,7 @@ The output will also require a <strong>carry-out flag</strong> <code>cout</code>
 <p>The reason why this works is because when you set <code>q</code> to <code>1</code> and <code>p</code> to <code>0</code> using <code>in</code>, <code>q</code> will send the value back to the wire of <code>in</code>, this will cause a loop where <code>in</code> is powering <code>p</code> and <code>q</code>, and <code>q</code> is powering the wire of <code>in</code> which is connected to <code>p</code> and <code>q</code>. See attached for more detail.</p>
 <p>Sequential logic has a higher delay than combinational logic, this delay is called <strong>propogation delay</strong>.</p>
 <p>A flaw with the bistable element is that it is impossible to switch the outputs back to their original state.</p>
-<img src="./images3823/4.png" alt="">
+<img src="./images3823/4.png" alt="img id 4, if you see this msg email me!">
 <p><strong>Set-Reset latches (SR latch</strong> are a type of circuit that allows you to change the output back to it&#39;s original state. </p>
 <p>There are 2 inputs, <code>S(set)</code>, <code>R(reset)</code>, and 2 outputs <code>Q+</code> and <code>Q-</code>.</p>
 <p><code>Q+</code> and <code>Q-</code> will always have opposite values.</p>
@@ -52,19 +52,19 @@ Latched/Stored: The input of <code>S</code> or <code>R</code> are both <code>0</
 Metastable: Both <code>S</code> and <code>R</code> are <code>1</code>, causing an error.</p>
 <p>The truth table for an SR latch is written using <code>q</code> to determine the value of <code>Q+</code> and <code>!q</code> is used to determine the value of <code>Q-</code></p>
 <p>The SR latch is only good for sending 1 bit, and not actual data. This is because it is hard to sync multiple of them when trying to handle larger data types.</p>
-<img src="./images3823/5.png" alt="">
-<img src="./images3823/6.png" alt="">
+<img src="./images3823/5.png" alt="img id 5, if you see this msg email me!">
+<img src="./images3823/6.png" alt="img id 6, if you see this msg email me!">
 <p>The <strong>Data Latch (D Latch)</strong> solves the two flaws of the SR latch</p>
 <ol>
 <li><code>S</code> and <code>R</code> are unable to store actial data</li>
 <li>When there are many SR latches, it is difficult to synchronize them.</li>
 </ol>
 <p>The D latch introduces a clock <code>C</code>, which ticks by the slowest propogation speed in the circuit. <code>C</code> controls when input data <code>D</code> can change output <code>Q+</code>. When <code>C</code> is active, the D latch is <strong>latching</strong> and <code>Q+</code> will change it&#39;s data according to <code>D</code>. When <code>C</code> is inactive, the D latch is <strong>storing</strong>. When storing, as long as <code>C</code> is inactive, <code>Q+</code> will not change regardless of <code>D</code>.</p>
-<img src="./images3823/7.png" alt="">
-<img src="./images3823/8.png" alt="">
+<img src="./images3823/7.png" alt="img id 7, if you see this msg email me!">
+<img src="./images3823/8.png" alt="img id 8, if you see this msg email me!">
 <p>An issue with D latches is that the value changes every time <code>C</code> is active, which makes it unable to truly store data. To combat this, <strong>flip-flops or edge-triggered latches (FF latches for notes)</strong> are used.</p>
 <p>FF latches only change when <code>C</code> is on the rising edge or it is being turned on, and won&#39;t respond to anything else. To measure if the <code>C</code> is on it&#39;s rising edge, three <code>not</code> gates leaving the <code>C</code> are connected to an <code>and</code> gate, and the <code>C</code> is directly connected to the other input of the and gate. The <code>and</code> gate is called the <code>Trigger (T)</code>.  The reason why this works is because there is an extremely small amount of delay between an input and a result, so the three <code>not</code> gates take advantage of that delay to capture the rising edge of <code>C</code>. Besides that the FF latch works very similarly to the D latch.</p>
-<img src="./images3823/9.png" alt="">
+<img src="./images3823/9.png" alt="img id 9, if you see this msg email me!">
 <p>A register is a group of flipflop circuits where each stores one bit. (Same registers as assembly)</p>
 <p>All of the flipflops are controlled by the same clock.</p>
 <p>In assembly, we have 32 general purpose registers all controlled by one clock that make one <strong>register file</strong> (see image for what a register file looks like)</p>
@@ -72,11 +72,11 @@ Metastable: Both <code>S</code> and <code>R</code> are <code>1</code>, causing a
 The write port has three inputs. <code>RegDataW</code> for the actual data input, <code>WriteReg</code> for where to write the data, and <code>RegWrite</code> which will determine if the data should be written or not.</p>
 <p>The read ports have two register numbers <code>ReadReg1</code> and <code>ReadReg2</code> are selectors for two different multiplexers which, then sends data to <code>RegData1</code> and <code>RegData2</code> respectively.</p>
 <p>Writing Data is sequential because it uses a clock. Reading data is combinational because of the multiplexers.</p>
-<img src="./images3823/10.png" alt="">
-<img src="./images3823/11.png" alt="">
+<img src="./images3823/10.png" alt="img id 10, if you see this msg email me!">
+<img src="./images3823/11.png" alt="img id 11, if you see this msg email me!">
 <p>Random Access Memory (RAM) aka memory uses sequential logic to store data. RAM has three buses, control, data, and address. Unlike the other two busses which are <strong>unidirectional</strong> (only 1 way the input can move), the data bus is <strong>bidirectional</strong>, which means it can only send <em>or</em> read data, not both simultaneously. The address bus will contain the memory address. The data bus will contain the data either to send or read based on the control bus. The control bus in this course will have a width of two bits and will indicate whether to read or write data using the data bus.</p>
 <p>For more info on RAM check out <a href="./1.html">chapter 1</a>'s RAM section.</p>
-<img src="./images3823/12.png" alt="">
+<img src="./images3823/12.png" alt="img id 12, if you see this msg email me!">
 <h2 id="3-2-assembly-machine-code">3.2 Assembly --&gt; Machine Code</h2>
 <p><strong>encoding</strong> is the process of turning assembly into binary.</p>
 <p>All ARMv8 encodings (not mandatory): <a href="https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions">https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions</a></p>
@@ -84,13 +84,13 @@ The write port has three inputs. <code>RegDataW</code> for the actual data input
 <h3 id="3-1-2-arithmetic-and-logical-instructions">3.1.2 Arithmetic and Logical instructions</h3>
 <p>There is some patterns to the opcode in instructions, such as if the 30th bit is active, then subtraction will occur, and addition otherwise, and the 29th bit is used to determine whether or not to select condition codes.</p>
 <p>When handling registers, bits 15--&gt;10 will always be <code>111000</code> for this course.</p>
-<img src="./images3823/13.png" alt="">
+<img src="./images3823/13.png" alt="img id 13, if you see this msg email me!">
 <p>When handing instructions with immedietes instead of registers, bits 20--&gt;10 are now used to represent the immediate/number. Besides that handling immediatesis near identical to handling registers.</p>
 <p>Do note that the same instructions have different opcodes, from when handling registers, see the image attached for the proper instructions for handling immediates.</p>
-<img src="./images3823/14.png" alt="">
+<img src="./images3823/14.png" alt="img id 14, if you see this msg email me!">
 <p>When handling branching, the <code>imm11</code> section that is bits 20 through 10 is the label address of the branch - address of the branching instruction</p>
 <p>The 4th through 0th bit for CBZ has <code>RT</code> in it, the target register is the register you are comparing to 0.</p>
-<img src="./images3823/15.png" alt="">
+<img src="./images3823/15.png" alt="img id 15, if you see this msg email me!">
 <h1 id="3-3-single-cycle-datapth">3.3 Single Cycle Datapth</h1>
 <h2 id="notation">Notation</h2>
 <p><code>R[x] = 64-bit data inside register x</code>
@@ -105,7 +105,7 @@ M[R[1]][31:0] = data at an address indicated by the data in <code>X1</code></p>
 <p>attached is a <strong>single cycle data path</strong>, it a simplified and inefficient version but shows the key concepts of designing a processor</p>
 <p>note instruction and data memory are both the same memory and are only seperate for illustration, instruction goes to <code>.text</code> and data goes to either <code>.data</code>, <code>.bss</code>, or the stack area</p>
 <p>the process of each instruction takes only 1 clock cycle</p>
-<img src="./images3823/16.png" alt="">
+<img src="./images3823/16.png" alt="img id 16, if you see this msg email me!">
 <p>The stages of an instruction are as follows</p>
 <ol>
 <li><strong>Instruction Fetching (IF)</strong>: get instruction from memory</li>
@@ -117,7 +117,7 @@ M[R[1]][31:0] = data at an address indicated by the data in <code>X1</code></p>
 <p><strong>IF</strong></p>
 <p><code>PC</code> sends address of instruction to be executed, and then it is read from memory and sent out from <code>Data</code> on the data bus. The fetched instruction is <code>I</code>. </p>
 <p><code>PC</code> is also sent to an adder to calculate the next instruction address by adding 4. However the PC is not updated yet until the EX stage.</p>
-<img src="./images3823/17.png" alt="">
+<img src="./images3823/17.png" alt="img id 17, if you see this msg email me!">
 <p><strong>ID</strong></p>
 <p>Take instruction <code>I</code> from IF, and send different fields to different data wires including reading register data.</p>
 <p>The highest 11 bits are <code>opcode</code> which is sent to the <strong>control unit</strong>, which converts opcode to control signals.</p>
@@ -141,7 +141,7 @@ M[R[1]][31:0] = data at an address indicated by the data in <code>X1</code></p>
  RegData1 = R[ReadReg1]
  RegData2 = R[ReadReg2]
 </code></pre>
-<img src="./images3823/18.png" alt="">
+<img src="./images3823/18.png" alt="img id 18, if you see this msg email me!">
 <p><strong>EX</strong></p>
 <p>2 inputs: <code>inputA</code> and <code>inputB</code>
 2 main parts: Computation and PC updating</p>
@@ -155,7 +155,7 @@ M[R[1]][31:0] = data at an address indicated by the data in <code>X1</code></p>
 <span class="hljs-attr">action</span> = ALUControl(sigCntl.ALUop, opcode)
 ALUout,<span class="hljs-attr">Z</span> = ALU(action, inputA, inputB)
 </code></pre><p>image for computing logic attached under PC updating</p>
-<img src="./images3823/19.png" alt="">
+<img src="./images3823/19.png" alt="img id 19, if you see this msg email me!">
 <p>PC updating</p>
 <p>4 options</p>
 <ol>
@@ -180,7 +180,7 @@ The logic for PC updating is as follows</p>
  <span class="hljs-attr">Br</span> = sigCntl.UBr | (sigCntl.CBr &amp; Z)
  <span class="hljs-attr">PC</span>  = ALUout <span class="hljs-keyword">if</span> sigCntl.PBr <span class="hljs-keyword">else</span> (BrPC <span class="hljs-keyword">if</span> Br <span class="hljs-keyword">else</span> nextPC)
 </code></pre>
-<img src="./images3823/20.png" alt="">
+<img src="./images3823/20.png" alt="img id 20, if you see this msg email me!">
 <p><strong>ME</strong></p>
 <p>Even if an instruction doesn&#39;t have memory access, it goes through ME</p>
 <p>Two unidirectional busses, <code>WriteDataM</code> and <code>ReadDataM</code></p>
@@ -190,7 +190,7 @@ The logic for PC updating is as follows</p>
 Ex: <code>STR X5, [X1, 0] --&gt;</code> <code>RegData2 = R[5]</code> writes to location <code>ALUout = R[1]+0</code></p>
 <p>In <code>LDR</code> <code>ReadDataM</code> is the same but instead of reading from register, it reads from memory</p>
 <p>Two outputs, <code>ALUout</code> from the ALU, and <code>ReadDataM</code></p>
-<img src="./images3823/21.png" alt="">
+<img src="./images3823/21.png" alt="img id 21, if you see this msg email me!">
 <p><strong>WB</strong></p>
 <p><code>RegWrite</code> controls if you need to write to a register
 <code>ALUout</code>, <code>ReadDataM</code>, and <code>nextPC</code> are the possible values to use for <code>RegDataW</code>(which will be written into the register)</p>
@@ -201,7 +201,7 @@ Ex: <code>STR X5, [X1, 0] --&gt;</code> <code>RegData2 = R[5]</code> writes to l
 R[WriteReg] = RegDataW <span class="hljs-keyword">if</span> sigCntl<span class="hljs-selector-class">.RegWrite</span> <span class="hljs-keyword">else</span> R[WriteReg]
 </code></pre><p>if <code>RegWrite</code> is 0, nothing is written, so <code>R[WriteReg]</code> does not change, instead <code>RegDataW</code> becoems <code>ALUout</code></p>
 <p><code>LinkReg</code> is only used when <code>BL</code> is used to handle return addresses</p>
-<img src="./images3823/22.png" alt="">
+<img src="./images3823/22.png" alt="img id 22, if you see this msg email me!">
 <h2 id="pipelining">Pipelining</h2>
 <p>Normally when an instruction goes through the 5 stages, only 1 instruction goes at a time and the rest are idle. Pipelining helps solve this issue.</p>
 <p><strong>Throughput</strong>: units of giga-instructions per second (GIPS), aka billions of instructions per second</p>
@@ -209,8 +209,8 @@ R[WriteReg] = RegDataW <span class="hljs-keyword">if</span> sigCntl<span class="
 <p>Using 3.28 as an example, assume it takes 300ps to get output <code>D</code> from input <code>sba</code>, and 20ps to push the data into the register. As a result it takes 320ps to move 1 input into <code>D</code>. (320*3=960)</p>
 <p>Essentially 1 input is processed per clock cycle instead of simultaneously.</p>
 <p>In the example, <code>s</code> goes through both <code>and</code> gates, and after 1 clock cycle will be at the <code>not</code> gate, while the other two inputs remain idle. There is no reason not to send these inputs to their respective <code>and</code> gates, and so we do just that. Creating a three-way pipeline. (See 3.30 for visual)</p>
-<img src="./images3823/23.png" alt="">
-<img src="./images3823/24.png" alt="">
+<img src="./images3823/23.png" alt="img id 23, if you see this msg email me!">
+<img src="./images3823/24.png" alt="img id 24, if you see this msg email me!">
 <p><strong>Pipeline Registers</strong></p>
 <p>The method of pipelining described above has some issues, such as when <code>s</code> enters stage 2 (using 3.30 above) is the que that we were supposed to send <code>b</code> to stage 1. However, since there is nothing blocking input <code>b</code>, it goes straight to stage 2, causing errors since the signals will be out of sync and may interrupt each other.</p>
 <p>To fix this you can place registers in between stages to act as &quot;barriers&quot; that make sure a signal completes its job before allowing all signals to progress to the next stage. These registers are called <strong>pipeline registers</strong> This would look like 3.31</p>
@@ -220,14 +220,14 @@ R[WriteReg] = RegDataW <span class="hljs-keyword">if</span> sigCntl<span class="
 120*3 = 360. This is 600ps faster than the unpipelined version (see above). Do note that the latency of an individual instruction is higher (100 vs 120),  but overall it&#39;s still faster.</p>
 <p>In reality though, not all stages take the same amount of time. This means that in order to make sure all stages can fit within 1 clock cycle for pipelining to be effective, <strong>the clock cycle duration is determined by the slowest stage.</strong></p>
 <p>A pipeline can be deepened by separating combinational logic into as many stages as possible, however the <strong>register overhead</strong> (time it takes to write to a register), makes it inefficient to just have as many stages as possible, since despite the shoter clock cycle, for each time it is shortened a flat value of latency is added.</p>
-<img src="./images3823/25.png" alt="">
+<img src="./images3823/25.png" alt="img id 25, if you see this msg email me!">
 <p><strong>Converting Single-Cycle Datapath to Pipeline</strong></p>
 <p>The data path (see 3.20 under 3.3) is all combinational logic besides writing back.</p>
 <p>Pipelining the datapath will make the datapath much more efficient, for a comparison see 3.34 below</p>
 <p>3.35 is an example of what a datapath would look like when pipelined. A pipeline register is added between every stage.</p>
 <p>Our pipelined data path can have at most 5 instructions running simultaneously because there are 5 stages and you can&#39;t have two instructions in the same stage.</p>
-<img src="./images3823/26.png" alt="">
-<img src="./images3823/27.png" alt="">
+<img src="./images3823/26.png" alt="img id 26, if you see this msg email me!">
+<img src="./images3823/27.png" alt="img id 27, if you see this msg email me!">
 <h2 id="hazards">Hazards</h2>
 <p>Pipelining can easily lead to wrong executions called hazards.</p>
 <p>2 types of hazards
@@ -245,10 +245,10 @@ the pipeline is reading and writing incorrect values.</p>
 <p><strong>Stalling the pipeline automatically</strong>
 A way to resolve data hazards automatically is through a combinational circuit called the <strong>hazard detection unit</strong>, using the example in 3.40, at cycle 4, instruction 1 is in ME stage, while instruction 3 is in ID stage. The hazard detection unit detects this and stalls instruction 3 to ensure it reads the right variables.</p>
 <p>To stall, a bubble is put, which is essentially a NOP.</p>
-<img src="./images3823/28.png" alt="">
-<img src="./images3823/29.png" alt="">
-<img src="./images3823/30.png" alt="">
-<img src="./images3823/31.png" alt="">
+<img src="./images3823/28.png" alt="img id 28, if you see this msg email me!">
+<img src="./images3823/29.png" alt="img id 29, if you see this msg email me!">
+<img src="./images3823/30.png" alt="img id 30, if you see this msg email me!">
+<img src="./images3823/31.png" alt="img id 31, if you see this msg email me!">
 <p>In this case, one bubble is not enough, so we insert another to prevent a hazard for <code>X2</code> at cycle 5. At cycle 6, both <code>X1</code> and <code>X2</code> have been updated, so cycle 7 and onwards continues as normal pipelined instructions since the data hazard has been resolved.</p>
 <p>Usually data hazards happen when one instruction is trying to read a register that hasn&#39;t been updated from previous instructions. If an instruction at ID stage relies on a previous instruction whose <code>RegWrite</code> signal is 1, and hasn&#39;t reached the WB stage, then a data hazard will occur.</p>
 <pre><code><span class="hljs-keyword">if</span> IDEX.RegWrite:
@@ -265,7 +265,7 @@ A way to resolve data hazards automatically is through a combinational circuit c
 <li><p>Insert bubbles into the EX stage. If a data hazard is detected, send instructions to IDEX using a multiplexer, if there is a hazard, IDEX will receive a NOP instead.</p>
 </li>
 </ol>
-<img src="./images3823/32.png" alt="">
+<img src="./images3823/32.png" alt="img id 32, if you see this msg email me!">
 <p><strong>Forwarding Data</strong></p>
 <p>Stalling a pipeline avoids data hazards, but it slows down the pipeline. A lot of the time fowarding data rom EX can be faster, so we make another combinational circuit called the <strong>forwarding unit</strong>(see 3.42 1 message down). The unit will detect if there is a data hazard, and if so it will overwrite the data read from the registers so a new value can be used as the input of the ALU instead of the old registers.</p>
 <p>For the two operands from the ALU, we use a four way multiplexer to select 1 of 3 possible inputs, one from ALUout of the previous instruction, one from RegDataW, and one from either RegData1 or RegData2.</p>
@@ -287,7 +287,7 @@ elif MEWB.RegWrite <span class="hljs-keyword">and</span> \
 <span class="hljs-keyword">else</span>:
    FA = <span class="hljs-number">0b00</span>
 </code></pre>
-<img src="./images3823/33.png" alt="">
+<img src="./images3823/33.png" alt="img id 33, if you see this msg email me!">
 <p><strong>Multiple Possible Forwarding</strong></p>
 <p>In the logic we put the ME checking in an elif instead of if because if we can receive data from EX we don&#39;t consider ME anymore.
 Using the example below</p>
@@ -306,7 +306,7 @@ ADD <span class="hljs-keyword">X</span><span class="hljs-number">2</span>, <span
     IDEX.<span class="hljs-attr">WriteReg</span> == IFID.ReadReg2:
         <span class="hljs-comment"># Stall the pipeline</span>
 </code></pre><p>3.42 shows what the datapath will look with a forwarding unit added.</p>
-<img src="./images3823/34.png" alt="">
+<img src="./images3823/34.png" alt="img id 34, if you see this msg email me!">
 <p><strong>Control Hazards</strong></p>
 <p>Control Hazards are the wrong execution of programs, primarily due to branching.</p>
 <pre><code>  CBZ <span class="hljs-keyword">X</span><span class="hljs-number">1</span>, .L<span class="hljs-number">1</span>
@@ -328,10 +328,10 @@ BTFN (predict branch taken if it&#39;s repeating, else predict branch not taken)
 To find the <strong>misprediction rate</strong> of a strategy, MR=Total # of wrong prediction / Total # of prediction #</p>
 <p><strong>Dynamic Prediction</strong></p>
 <p>Uses hardware to record behavior of every branch, if it&#39;s taken or not, and make decisions based on current status. This happens during <strong>run time</strong>, has two methods, <strong>Last-time predictor</strong> and <strong>Two-bit predictor</strong></p>
-<img src="./images3823/35.png" alt="">
+<img src="./images3823/35.png" alt="img id 35, if you see this msg email me!">
 <p>Last-time predictor uses which direction the branch went last time to predict when it will take the branch next time. A loop with N iterations will have a misprediction on the first and last iteration, so MR=2/N. The issue with last-prediction is it changes state very quicky. </p>
 <p>Two-bit predictor is much more complex but addresses that problem. Two-bit predictor predicts the branch based on it&#39;s past two predictions and actual behaviors. (see 3.44). Assume in i iteration, the predictor is at <strong>strongly taken</strong>, and predicts the branch is taken, but it isn&#39;t taken, in i+1, instead of predicting it is not taken, it will enter <strong>weakly taken</strong> but still predict it&#39;s taken. If it is still wrong, in iteration i+2 it will enter <strong>weakly not taken</strong>. Research found a two-bit predictor has about a 10%-15% misprediction rate.</p>
-<img src="./images3823/36.png" alt="">
+<img src="./images3823/36.png" alt="img id 36, if you see this msg email me!">
 <h2 id="3-6-performance-evaluation">3.6 Performance Evaluation</h2>
 <p>The <strong>clock rate</strong> is the amount of cycles the CPU can run in 1 second.
 The <strong>clock period</strong> is the amount of time spent on 1 cycle</p>
