@@ -37,8 +37,8 @@
 <p><code>sum_array_cols()</code> needs to skip over N elements in each iteration since columns are not stored as closely together in C, meaning it has a <strong>stride-N reference.</strong> In column-major order languages, <code>sum_array_cols()</code> would have better locality. </p>
 <p>Caching is the concept of if something is used frequently and together, to load them to a separate device that is faster than memory just once, and put them back in memory after.</p>
 <p>Look at 4.1, disk seek is almost 10^9 times slower than cpu cycle time. Programs stored on the hard drive are sent to memory, making running programs much faster.</p>
-<img src="./images3824/1.png" alt="img id 1, if you see this msg email me!">
-<img src="./images3824/2.png" alt="img id 2, if you see this msg email me!">
+<img src="./images3824/1.png" alt="img id 1, if you see this msg email me with the class & chapter it was found in!">
+<img src="./images3824/2.png" alt="img id 2, if you see this msg email me with the class & chapter it was found in!">
 <p>The faster a storage device is, the more expensive it is to store a byte. So faster devices end up storing less.</p>
 <p>Registers are inside the CPU, so they are the fastest storage, but that means they are also the most expensive. Hence why there are only 32 in ARMv8.</p>
 <p>If the table of devices(4.1 above) were to be organized in a diagram, it would be the pyramid in 4.4(above) called the <strong>memory hierarchy</strong>. The device at level k in the image is a cache of the device at level k+1. As k increases devices get larger, cheaper, but are also slower. The device at k stores data frequently used from k+1, so k-1 can access it faster. If data requested by k-1 is not at k, it will retrieve it from k+1.</p>
@@ -61,8 +61,8 @@ Ex: <code>STR X10, [X9]</code> will work very similar to a read transaction, but
 <p>Memory transactions are too slow for the processor.
 Cache is built of Static Ram/SRAM which is more expensive but faster. It is also smaller than main memory.</p>
 <p>4.6 shows what 4.5 looks like once a cache is added on the CPU.</p>
-<img src="./images3824/3.png" alt="img id 3, if you see this msg email me!">
-<img src="./images3824/4.png" alt="img id 4, if you see this msg email me!">
+<img src="./images3824/3.png" alt="img id 3, if you see this msg email me with the class & chapter it was found in!">
+<img src="./images3824/4.png" alt="img id 4, if you see this msg email me with the class & chapter it was found in!">
 <p>Here&#39;s an example of how a cache works, use figure 4.7 as a visualization</p>
 <p>At the start the cache is empty. Then we run <code>LDR X0,[X1]</code>. Because the memory data at address X1(M[X1]) is not in the cache, we go to memory to retrieve it.</p>
 <p>When we retrieve the data, we don&#39;t just bring the data but also a block of data which is the data at neighboring addresses in memory.</p>
@@ -78,7 +78,7 @@ A cache has 3 parameters, S, E, and B. A cache will always have S=2^s <strong>se
 4.8(bottom next msg) shows an image of a cache.</p>
 <p>Given an address, to check if the data is in the cache, the address split into three smaller parts. t bits for the tag, s bits for the set index, and b bits for the block offset.</p>
 <p>First t bits are the tag. Next s bits are the set index. Last b bits for block offset.</p>
-<img src="./images3824/5.png" alt="img id 5, if you see this msg email me!">
+<img src="./images3824/5.png" alt="img id 5, if you see this msg email me with the class & chapter it was found in!">
 <p>From there we perform the following steps</p>
 <ol>
 <li>Use the set index in the address to locate a set.</li>
@@ -107,16 +107,16 @@ Since the cache is empty, Set 00 has nothing, so it is empty, so it is a miss.
 So we go to memory and grab <code>M[0b0000]</code> and <code>M[0b0001]</code>, we grab both because in the assumptions we know each set can store 2 bytes, so we grab 2 bytes of data.</p>
 <p>After that we load 1 byte starting at offset 0 from that line, so <code>M[0b0000]</code> goes back to the register files.</p>
 <p>Next we load <code>0b0001</code>, and it&#39;s 2 bits after the tag are 0b00, so we index to set 00. We notice the valid bit is turned on, and the tag also matches what is in the data. So we have a hit. Then we index by 1 since the last bit in this example is the block offset and we send the data which is <code>M[0001]</code> to the register file.</p>
-<img src="./images3824/6.png" alt="img id 6, if you see this msg email me!">
-<img src="./images3824/7.png" alt="img id 7, if you see this msg email me!">
-<img src="./images3824/8.png" alt="img id 8, if you see this msg email me!">
+<img src="./images3824/6.png" alt="img id 6, if you see this msg email me with the class & chapter it was found in!">
+<img src="./images3824/7.png" alt="img id 7, if you see this msg email me with the class & chapter it was found in!">
+<img src="./images3824/8.png" alt="img id 8, if you see this msg email me with the class & chapter it was found in!">
 <p>Now for <code>0b0111</code>, the set index becomes 0b11, so we have a miss. So we go to main memory and copy both <code>M[0110]</code> and <code>M[0111]</code> to the cache. Then we set the valid bit to 1, set the tag to 0, and since the block offset is 1, we copy the <code>M[0111]</code> to the register file.</p>
 <p>The reason why we copied <code>M[0110]</code> and not <code>M[1000]</code> is because the last bit is the block offset and <code>M[0111]</code> is occupying the block offset at 1, so we copy a value with the same tag and set index but at a block offset of 0.</p>
 <p>Next is <code>0b1000</code>. It has a set index of <code>0b00</code> so we go to set 00 and compare the tags. Since both of the tags of the values in set 00 are 0, and <code>0b1000</code> has a tag of 1, we have a miss. So we go to main memory, copy <code>M[0b1000</code> and <code>M[0b1001</code> to the cache.</p>
 <p>Lastly is <code>0b0000</code> again. So we index to set 00, compare the tags and notice the tag is now 1, so we have a miss. So we must go to memory, copy <code>M[0b0000</code> and <code>M[0b0001</code> again and overwrite the values in set 00 and update the tag.</p>
 <p>ngl im skipping real world example bc its the same stuff, if you don&#39;t understand direct mapped caches see 4.2.3.3 in the textbook for a real world example</p>
-<img src="./images3824/9.png" alt="img id 9, if you see this msg email me!">
-<img src="./images3824/10.png" alt="img id 10, if you see this msg email me!">
+<img src="./images3824/9.png" alt="img id 9, if you see this msg email me with the class & chapter it was found in!">
+<img src="./images3824/10.png" alt="img id 10, if you see this msg email me with the class & chapter it was found in!">
 <p><strong>Associative Cache</strong></p>
 <p>In a direct mapped cache, if ther is a conflict we must go to the memory and replace the dat ain the cache.</p>
 <p>An associative cache has 2 lines per set, one with a tag of 0, and the other with a tag of 1.</p>
@@ -132,7 +132,7 @@ Reduce the number of sets in half, so for this example S=2, but to keep B=2, the
 <p>If data is requested from the cache and empty lines are in the set, which line do we put the data in? A simple solution is to just put it in the next available line.</p>
 <p>When there is a conflict, since each line has two bits per tag, there are 4 possible tags for each set total. Because there are only 2 lines per set, not every possible tag will be in a set. So which line do replace?</p>
 <p>For the sake of this class, we will replace the earliest used line.</p>
-<img src="./images3824/11.png" alt="img id 11, if you see this msg email me!">
+<img src="./images3824/11.png" alt="img id 11, if you see this msg email me with the class & chapter it was found in!">
 <p>Above we discussed read transactions with a Cache</p>
 <p>The issue with write transactions is due to multiple copies throughout the entire system. For example lets run <code>STR X0, [0x1000]</code>. This writes the data stored in <code>X0</code> at memory address <code>0x1000</code> if the data at this address has already been copied in the cache, do we only update the cache or the memory or both?</p>
 <p>If we update only the cache, resulting in the cache and memory having two different values. If the cache gets replaced the new value will be gone and the memory still has the old value.</p>
@@ -151,7 +151,7 @@ copy the line into the cache from main memory, then update the data in the cache
 <p>L1, L2, L3, and so on are levels of cache. Lk holds part of the data copied from Lk+1, Lk is smaller and more expensive than Lk+1. Figure 4.13 shows an example of what an ARM chip looks like.</p>
 <p>When buying a computer, terms like &quot;8-core&quot; or &quot;quadcore&quot; mean having multiple CPUs with the basic elements in this course. In recent architectures, L1 is actually two caches, d-cache for data, and i-cache for instructions.</p>
 <p>If there are multiple cores in one processor package, it is common for there to be an L2 cache that connects all the cores. It is larger and slower than L1. Sometimes a computer can even have multiple processor packages, so each one is connected by one even larger and slower L3 cache. L3 is external in this case because it is not on a particular processor chip.</p>
-<img src="./images3824/12.png" alt="img id 12, if you see this msg email me!">
+<img src="./images3824/12.png" alt="img id 12, if you see this msg email me with the class & chapter it was found in!">
 <p><strong>Evaluation Metrics</strong></p>
 <p>Miss rate = Times of data not found in cache/Total memory reference</p>
 <p>An example of this is given a bitmap image of pixels, each pixel is represented with the struct below.</p>
@@ -185,7 +185,7 @@ Variables i and j are stored in registers and accessing them won&#39;t cause a c
 <p>In the inner loop, the first write in the first iteration will always be a miss. This is either due to there being no cache, or the line it is at being replaced. Then all eight bytes starting from pixel+i+j will be carried into the cache. This means the next 7 writes will all be hits.</p>
 <p>It is possible to rewrite so it is identical in cache and memory access. It would become the image attached.</p>
 <p>Knowing that 1/8 writes is a miss, we have a miss rate of 12.5%.</p>
-<img src="./images3824/13.png" alt="img id 13, if you see this msg email me!">
+<img src="./images3824/13.png" alt="img id 13, if you see this msg email me with the class & chapter it was found in!">
 <p><strong>Cache friendly code</strong></p>
 <p>When we learned Big-O notation, we were told to ignore hardware differences.</p>
 <p>We are tasked with writing code for matrix multiplication between two matrices a and b of the same size nXn. Three different implementations all with O(n^3) runtime are listed below.
@@ -224,7 +224,7 @@ for (<span class="hljs-keyword">j </span>= <span class="hljs-number">0</span><sp
 <p>For method kij, the inner loop does not involve matrix a, so it is ignored. Element b[k][j] iterates through all of the elements in each row, so the miss rate is also 0.25. Matrix c does the same so it&#39;s miss rate is also 0.25.</p>
 <p>For jki, matrix b is not in the inner loop, so it is ignored. For matrices a and c, the inner loop iterates by the column, so both have a miss rate of 100%. </p>
 <p>Figure 4.14 shows a graph of each method&#39;s cycles depending on the size of n.</p>
-<img src="./images3824/14.png" alt="img id 14, if you see this msg email me!">
+<img src="./images3824/14.png" alt="img id 14, if you see this msg email me with the class & chapter it was found in!">
 <h1 id="4-3-virtual-memory">4.3 Virtual Memory</h1>
 <p>The addresses recieved by cache are called <strong>physical addresses</strong>, they are real addresses used in the real main memory.</p>
 <p>Laptops currently are usually 16GB-8GB of physical RAM, which is shared among all programs running in the system. 16GB is not enough to run multiple applications. For example just Shudong&#39;s music player on macOS needs 392GB of memory space.</p>
@@ -236,8 +236,8 @@ for (<span class="hljs-keyword">j </span>= <span class="hljs-number">0</span><sp
 <p>The operating system provides <strong>virtual memory</strong> which is a memory management mechanism.</p>
 <p>So far in this course all of our statements involving memory addresses besides ones which use a cache refer to virtual memory. If a virtual memory has n bits, each program will have the same set of N=2^n -1 unique virtual addresses, called a <strong>virtual address space</strong></p>
 <p>Physical memory is byte addressed, if a physical memory has m bits, then then it has M=2^m -1 unique addresses is called the <strong>physical address space</strong>.</p>
-<img src="./images3824/15.png" alt="img id 15, if you see this msg email me!">
-<img src="./images3824/16.png" alt="img id 16, if you see this msg email me!">
+<img src="./images3824/15.png" alt="img id 15, if you see this msg email me with the class & chapter it was found in!">
+<img src="./images3824/16.png" alt="img id 16, if you see this msg email me with the class & chapter it was found in!">
 <p>Despite the equations being the same, N &gt; M because virtual memory space simply has more bits.</p>
 <p>It is possible to chop virtual memory space into <strong>virtual pages</strong> and only load some virtual pages into physical memory. Those virtual pages then become <strong>physical pages</strong></p>
 <p>If a processor needs data or code in a page that isn&#39;t present, then it needs to find a page to swap out. If it can&#39;t, then a delay happens. This is basically lag from opening too many apps.</p>
@@ -252,7 +252,7 @@ for (<span class="hljs-keyword">j </span>= <span class="hljs-number">0</span><sp
 <p>a&#39; = MAP(a) where a&#39; is the translated physical address. If a&#39;  ∈ P, the virtual address can be successfully mapped to physical memory, and the data can be found there. If a&#39; = ∅, the virtual address can&#39;t be mapped to physical memory, this can happen if we are trying to use a variable that&#39;s currently in a virtual page but that page hasn&#39;t been loaded to physical memory yet. If the address can be mapped, it is a <strong>page hit</strong>, otherwise it is a <strong>page fault</strong>.</p>
 <p>Translation occurs in a special hardware called the <strong>memory management unit</strong> (MMU), adding a MMU to the CPU looks like figure 4.19</p>
 <p>MMU takes in a virtual memory address, and translates it to a physical address and sends it to the cache. It&#39;s managed and programmed by the operating system.</p>
-<img src="./images3824/17.png" alt="img id 17, if you see this msg email me!">
+<img src="./images3824/17.png" alt="img id 17, if you see this msg email me with the class & chapter it was found in!">
 <p>For the MMU to translate addresses, it just looks it up using the <strong>page table</strong> which is a 1-1 map stored in the main memory. It has two columns, the first being valid bit, and the other being <strong>Physical Page Number</strong> (PPN)</p>
 <p>Each row is called a <strong>page table entry</strong>, the index to each page table entry is called the <strong>virtual page number </strong>(VPN). An example is given a virtual address we know the VPN of is 2, by looking it up in the table attached as an example, we know that the virtual page is located at address starting from <code>0xCC00</code> in physical memory. The valid bid indicates it&#39;s actually in physical memory and if it is 1 we have a page hit, and if it is 0 we have a page fault.</p>
 <p>When there is a page fault, the main memory will pick a page called the victim page and evict it to secondary storage such as a hard drive, then the page we need will be taken back to main memory from the hard drive and the address will be translated by the MMU.</p>
@@ -261,8 +261,8 @@ Bits n-1 -&gt; p are the VPN, while bits p-1 -&gt; 0 are the virtual page offset
 <p>The VPN is used to index to a row in the page table, and if the valid bit at that row is a 1, then it&#39;s a hit. From there we index by the VPO to get the physical page of that row. The VPO then becomes the physical page offset (PPO) without change, and PPN is pulled from the table. The two are combined to make the physical address.</p>
 <p>If PPO = 0, we want the first byte of that page. If PPO = 1600, we want the 1601th byte of that page. p bits are needed to represent the offset, and each byte has it&#39;s own address so there will be 2^p bytes stored. Therefore the <strong>page size</strong> P=2^p</p>
 <p>To prevent the MMU from being overwritten in the cache because it is constantly needed, a TLB or <strong>translation lookaside buffer</strong> can be installed on the MMU as seen in figure 4.20. The TLB is a set-associative cache where each line stores one page table entry.</p>
-<img src="./images3824/18.png" alt="img id 18, if you see this msg email me!">
-<img src="./images3824/19.png" alt="img id 19, if you see this msg email me!">
+<img src="./images3824/18.png" alt="img id 18, if you see this msg email me with the class & chapter it was found in!">
+<img src="./images3824/19.png" alt="img id 19, if you see this msg email me with the class & chapter it was found in!">
 <p>The VPN is then split into the TLB tag (TLBT) and the TLB index (TLBI)</p>
 <p>These two parts index a page table entry (line) in the TLB.</p>
 <p><strong>From Virtual Address to Data</strong></p>
@@ -283,7 +283,7 @@ First 32 pages of TLB are shown below in table 4.3</p>
 <p>Now that the components of the virtual address have been identified, we can turn the address given at the start into binary and label the parts using the bit subsets we found in the previous step.</p>
 <p>Next we index into TLB and in this example we index into set 0 to see if any matches our TLBT of <code>0x07</code> in this example. None do, so we have a TLB miss, so VPN is used to check the page table. MMU will go to main memory and fetch the page table entry given VPN.</p>
 <p>Looking at table 4.3 we can see that the page table entry for <code>0x0E</code> has a PPN of <code>0x1</code> And it&#39;s valid bit is 1, so we have a page hit. MMU takes this page back and translates it to physical address.</p>
-<img src="./images3824/20.png" alt="img id 20, if you see this msg email me!">
+<img src="./images3824/20.png" alt="img id 20, if you see this msg email me with the class & chapter it was found in!">
 <p>Next is translate to physical address. We have the PPN, so we put it in the MMU and attach it with VPO to form the physical address. The result is <code>0x11DE</code>. This is where ptr points to in physical memory.</p>
 <p>Next we write out and parse the physical address in binary and identify the cache components. In this example cache has 8 sets, so we need 3 bits for set index, and each line has 4 bytes, so 2 bytes for block offset. 13-2-3 = 8, so 8 bits for tag.</p>
 <p>Visit the cache using the parameters generated in the previous step, and determine if we have a cache hit or miss. If we have a hit (in this example we do), the byte is brought back to the CPU and stored in <code>W0</code>,</p>

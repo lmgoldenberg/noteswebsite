@@ -65,7 +65,7 @@
 and
  rdecs = (string*string*texpr option*texpr option*expr) list</p>
 <p>The new judgement rules added on top of REC(with alterations to fit the new format) are in figure 4.2 (below)</p>
-        <img src="./images4964/2.png" alt="">
+        <img src="./images4964/2.png" alt="img id 2, if you see this msg email me with the class & chapter it was found in!">
 <h3 id="4-3-3-interpreter">4.3.3 Interpreter</h3>
 <p><strong>4.3.3.1 Specification</strong></p>
 <p>In irefs all identifiers are mutable.
@@ -96,7 +96,7 @@ A circular environment is an environment <code>env</code> that has an entry to l
       eval_expr target
      )
 </code></pre>
-        <img src="./images4964/3.png" alt="">
+        <img src="./images4964/3.png" alt="img id 3, if you see this msg email me with the class & chapter it was found in!">
 <h2 id="4-4-parameter-passing-methods">4.4 Parameter Passing Methods</h2>
 <p>There are several parameter passing methods in irefs, there are languages in the <code>PLaF/src</code> file that represent them, all of them are forks of irefs.</p>
 <h3 id="4-4-1-call-by-value">4.4.1 Call by value</h3>
@@ -134,7 +134,7 @@ and
     value_ofoperand e2 &gt;&gt;=
     apply_clos clos
 </code></pre>
-        <img src="./images4964/4.png" alt="">
+        <img src="./images4964/4.png" alt="img id 4, if you see this msg email me with the class & chapter it was found in!">
 <h3 id="call-by-name">Call by name</h3>
 <p>In call by name, parameters once passed are freezed until they are actually needed. In <code>App(e1, e2)</code>, if <code>e2</code> is an identifier, it is just like call by reference, where a copy of the address is passed in, and it is looked up in the environment. Copying an address is a constant time operation, so it isn&#39;t an issue. Though if <code>e2</code> is an expression, it&#39;s evaluation does not take place but rather <code>e2</code> and it&#39;s current environment are stored for later.</p>
 <p>The pair that stores <code>e2</code> and it&#39;s current environment is a <strong>thunk</strong>. It is structured like Thunk(x+2, [x=NumVal 3])</p>
@@ -170,7 +170,7 @@ and
        | <span class="hljs-type">_</span>-&gt; <span class="hljs-keyword">return</span> ev)
 ...
 </code></pre>
-        <img src="./images4964/5.png" alt="">
+        <img src="./images4964/5.png" alt="img id 5, if you see this msg email me with the class & chapter it was found in!">
 <h3 id="call-by-need">Call by need</h3>
 <p>A drawback of call by name is a thunk is thawed every time it is needed.</p>
 <p>In call by name, running this program will compute the factorial of 5 a total of 4 times, 1 for each time <code>y</code> is used in <code>g</code></p>

@@ -46,8 +46,8 @@ Examples of incorrect expressions: <code>3--4</code>, <code>div 2</code>, <code>
 where <code>:=</code> represents definitional equality, so <code>R</code> is &quot;defined to be&quot; the set of <em>Z</em> integers or the special symbol <em>error</em>. 
 Try to find the derivation of <code>Sub(Div(Int 4, Int2), Int 1) ⇓ 1</code> and <code>Sub(Div(Int 8, Int 0), Int 1) ⇓ error</code>.  The former&#39;s answer can be found below.</p>
 <p>Note: not all evaluation judgements are derivable, an example of a non-derivable one is <code>Sub(Int 3, Int 1) ⇓ 1</code> because the judgement does not hold.</p>
-        <img src="./images4962/1.png" alt="img id 1, if you see this msg email me!">
-        <img src="./images4962/2.png" alt="img id 2, if you see this msg email me!">
+        <img src="./images4962/1.png" alt="img id 1, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images4962/2.png" alt="img id 2, if you see this msg email me with the class & chapter it was found in!">
 <p><strong>Implementation</strong></p>
 <p>In order to use evaluation rules as a guideline for implementation, both components and evaluation judgements must be expressed in OCaml. Components are already expressed through the variable type <code>expr</code>, but evaluation judgements will be modeled with the following type</p>
 <p><code>type &#39;a result = Ok of &#39;a | Error of string</code>, this means that type <code>int result</code> will either be an integer, or an error.</p>

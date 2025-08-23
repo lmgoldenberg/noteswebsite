@@ -6,7 +6,366 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 7</p>
+        <h1 id="7-inter-process-communication">7 Inter Process Communication</h1>
+<h2 id="7-1-pipes">7.1 Pipes</h2>
+<p>Lets say we want to count the number of files in a directory.
+This would be done by feeding the stdout of ls to wc</p>
+<p>The most naïve implementation would be 
+<code>ls./ &gt; temp</code>, and then <code>wc &lt; temp</code></p>
+<p>This is inefficient because reading and writing to a file takes a lot of time, and raises the question on what if we can&#39;t store the file <code>temp</code>?</p>
+<p>There are kernel and user spaces in main memory.
+User space only contains isolated process images.
+A <strong>pipe</strong> is a buffer in the kernel space for data to transfer between processes.</p>
+<p>This section focuses on unnamed pipes, the next one will focus on named pipes/FIFO.</p>
+<p>The better implementation of counting the # of files in a directory is through the pipe operator <code>|</code> from bash, it would be used as <code>ls ./ | wc</code></p>
+<p>It takes the stdout of <code>ls ./</code> and feeds it to <code>wc</code>&#39;s stdin</p>
+<p>Though a pipe seems like a file, and is a file type, it is actually not a file, but can be thought of like a converyer belt that has a fixed number of logical blocsk that can be filled and emptied.</p>
+<p>pipes have a read and write end, so they are unidirectional(1 direction, not the band), they can be made in c using <code>pipe(int pipefd[2])</code>, on success <code>0</code> is returned, and on fail <code>-1</code> is returned. It creates a pipe in the kernel space, and assigns 2 new file descriptors and connects the read end with <code>pipefd[0]</code> and the write end with <code>pipefd[1]</code></p>
+<p>Every process can have multiple pipes created by the process itself.</p>
+<p>Since they are registered as a file type, file I/O operations like <code>write()</code> and <code>read()</code> work on pipes, though <code>lseek()</code> will not.</p>
+<p>Calling <code>write()</code> on the write end of the pipe (in our case <code>pipefd[1]</code>, will write data into the pipe.</p>
+<p>Calling <code>read()</code> on the read end of the pipe <code>pipefd[0]</code> will empty the data from the pipe in FIFO order.</p>
+<pre><code class="lang-C"> <span class="hljs-comment">/*** pipe1.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;string.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> READ_END 0</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> WRITE_END 1</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> NUM 5</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> BUFSIZE 32</span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span> <span class="hljs-keyword">const</span> *argv[])</span> </span>{
+   <span class="hljs-keyword">int</span> i, nbytes;
+   <span class="hljs-keyword">int</span> fd[<span class="hljs-number">2</span>];
+   <span class="hljs-keyword">char</span> message[BUFSIZE+<span class="hljs-number">1</span>];
+   <span class="hljs-comment">/* Create a pipe */</span>
+   <span class="hljs-keyword">if</span> (pipe(fd) ==<span class="hljs-number">-1</span>) <span class="hljs-built_in">exit</span>(EXIT_FAILURE);
+     <span class="hljs-comment">/* Write NUM strings to the file descriptor */</span>
+     <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span>; i &lt;= NUM; i ++) {
+        <span class="hljs-built_in">sprintf</span>(message, <span class="hljs-string">"Hello #%2d"</span>, i);
+         write(fd[WRITE_END], message, <span class="hljs-built_in">strlen</span>(message));
+     }
+     <span class="hljs-built_in">printf</span>(<span class="hljs-string">"%d messages sent; sleeping a bit...\n"</span>, NUM);
+     sleep(<span class="hljs-number">3</span>);
+     <span class="hljs-comment">/* Read bytes from the pipe */</span>
+     <span class="hljs-keyword">while</span> (!(nbytes = read(fd[READ_END],message,BUFSIZE))){
+       <span class="hljs-keyword">if</span> (nbytes &gt; <span class="hljs-number">0</span>) {
+         message[nbytes] = <span class="hljs-number">0</span>;
+         <span class="hljs-built_in">printf</span>(<span class="hljs-string">"%s\n"</span>, message);
+         sleep(<span class="hljs-number">1</span>);
+       }
+       <span class="hljs-keyword">else</span> <span class="hljs-keyword">break</span>;
+     }
+ <span class="hljs-built_in">exit</span>(EXIT_SUCCESS);
+}
+</code></pre>
+<p>Two major concepts</p>
+<p><strong>Pipes store bytes not strings</strong>, when writing to the pipe, can write any data type, though when reading it will just give a chunk of data regardless of the data type of the input. The data is consecutive bytes called a byte stream.</p>
+<p><strong>Close write-end when it&#39;s done</strong>, the example code hangs because the write-end is not closed. So <code>read()</code> is stuck there. If there is nothing else to write to the pipe, close it&#39;s write-end so the read-end knows there is nothing else coming.
+See manpage excerpt below</p>
+<p>From manpage, <a href="https://man7.org/linux/man-pages/man7/pipe.7.html">https://man7.org/linux/man-pages/man7/pipe.7.html</a>.
+If a process attempts to read from an empty pipe, then read(2) will block until data is available. If a process attempts to write to a full pipe (see below), then write(2) blocks until sufficient data has been read from the pipe to allow the write to complete.
+...
+If all file descriptors referring to the write end of a pipe have been closed, then an attempt to read(2) from the pipe will see end-of-file (read(2) will return 0). If all file descriptors referring to the read end of a pipe have been closed, then a write(2) will cause a SIGPIPE signal to be generated for the calling process.</p>
+<p><strong>Sharing a Pipe</strong></p>
+<p>The demo code above only shows how to use a pipe, but not how to share one.</p>
+<p>If a process opens a file before forking, the parent and the child will share the same file descriptor entry in the open file table, and will operate on the same file.
+Create a pipe first, then fork so the pipe and the child can communicate using the pipe.</p>
+<p>See figure 7.2 (below) for an illustration that will be referred to.</p>
+<p>The red line is from child to parent, and the blue line is from parent to child. This is a <strong>full-duplex</strong>, which is illegal in POSIX standards.</p>
+<p>We should only implement <strong>half-duplexes</strong> to be POSIX compliant.</p>
+<p>To do this decide the direction of data flow, and close the rest of the file descriptors.</p>
+<p>Ex: If we want the child to read from parent, close the child&#39;s write end, and the parents read end.</p>
+<p>An example of this in code would be</p>
+<pre><code class="lang-C"><span class="hljs-comment">#define WRITE_END 1</span>
+<span class="hljs-comment">#define READ_END  0</span>
+
+...
+
+<span class="hljs-keyword">if</span> (pipe(fd) == -<span class="hljs-number">1</span>) <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+
+<span class="hljs-regexp">/* child process */</span>
+<span class="hljs-keyword">if</span> (fork() == <span class="hljs-number">0</span>) {
+    close(fd[WRITE_END]);  <span class="hljs-regexp">/* close write-end */</span>
+    bytesread = read(fd[READ_END], buffer, BUFSIZE);
+    <span class="hljs-regexp">/* check for errors afterwards of course */</span>
+}
+<span class="hljs-regexp">/* parent process */</span>
+<span class="hljs-keyword">else</span> {
+    close(fd[READ_END]);   <span class="hljs-regexp">/* close read-end */</span>
+    byteswritten = write(fd[WRITE_END], msg, strlen(msg));
+}
+</code></pre>
+        <img src="./images3927/1.png" alt="img id 1, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3927/2.png" alt="img id 2, if you see this msg email me with the class & chapter it was found in!">
+<p>An example of the functionality of a full-duplex being implemented using half-duplexes, refer to figure 7.3(above)</p>
+<p><strong>Implementing the Pipe Operator</strong></p>
+<p>Let&#39;s implement the <code>|</code> operator in C to solve our problem from the start</p>
+<ol>
+<li>Use <code>pipe()</code> to make a pipe</li>
+<li>Create two child processes (denoted as C1 and C2), each of which
+will be used for a command. We assume C1 is for <code>ls</code> and C2 is for <code>wc</code></li>
+<li>Close all unrelated file descriptors, including:</li>
+<li>Both read- and write-end in the parent;</li>
+<li>Read-end in C1;</li>
+<li>Write-end in C2;</li>
+<li>Let parent wait for both child processes</li>
+<li>Re-direct stdout in C1 to the write-end of the pipe</li>
+<li>Re-direct stdin in C2 to the read-end of the pipe</li>
+<li>Execute <code>ls</code> in C1 and <code>wc</code> in C2</li>
+</ol>
+<p>5 and 6 we don&#39;t know how to do yet, this is where we use <code>dup(int oldfd)</code></p>
+<p>Given an FD oldfd, <code>dup()</code> assigns a new D that points to the same file as <code>oldfd</code>, which is the lowest numbered avaliable FD. This new fd is the return value of <code>dup()</code></p>
+<p>Here is an example of how to redirect the stdout of C1 to the write-end of the pipe</p>
+<pre><code class="lang-C">close(<span class="hljs-number">1</span>)<span class="hljs-comment">; // or close(fileno(stdout));</span>
+dup(<span class="hljs-name">pfd</span>[<span class="hljs-number">1</span>])<span class="hljs-comment">;</span>
+close(<span class="hljs-name">pfd</span>[<span class="hljs-number">1</span>])<span class="hljs-comment">;</span>
+</code></pre>
+<p>If we were to <code>close(0)</code> before the fist lone of that example, the lowest numbered FD would be <code>0</code> and therefore the pipes would not be connected properly.</p>
+<p><strong>Race Conditions</strong></p>
+<p>There are multiple processes running in the system and the kernel responsible for scheduling them individually.</p>
+<p>None of the processes run back to back in 1 setting, a process can be put on hold to let others run first. This can happen at any point.</p>
+<p>The problem is if a process is using a resource or dealing with hardware, interrupting it can be risky, and it&#39;s consequences are called <strong>race conditions</strong></p>
+<p>Lets assume our program (previous code block) has a signal handler for <code>SIGINT</code> called <code>erroring()</code></p>
+<pre><code class="lang-C"><span class="hljs-keyword">void</span> erroring(<span class="hljs-keyword">int</span> sig) {
+   <span class="hljs-keyword">int</span> fd = <span class="hljs-built_in">open</span>(<span class="hljs-string">"error"</span>, O_WRONLY | O_CREAT | O_TRUNC);
+   <span class="hljs-built_in">write</span>(fd, <span class="hljs-string">"What's up"</span>, <span class="hljs-number">9</span>);
+   <span class="hljs-built_in">return</span>;
+}
+</code></pre>
+<p>In the event we send SIGINT using Ctrl+C between <code>close(1)</code> and <code>dup(pdf[1])</code>, the main program will be paused and this handler will start executing.</p>
+<p><code>open()</code> also assigns to the lowest avaliable FD, so it will occupy <code>1</code>, so when we resume the main program, <code>dup(pdf[1])</code> will not assign <code>1</code> as the new fd.</p>
+<p>To prevent this system calls are <strong>atomic</strong>, which means they can&#39;t be interrupted until they are over. This trait is called <strong>atomicity</strong>.</p>
+<p><code>open()</code> is atomic because until the function has finished nothing can interrupt it.
+This is not the same with something such as <code>a=a+1</code> since in between <code>a+1</code> and assigning the variable back to memory, the CPU may let other processes execute first.</p>
+<p>If <code>close()</code> and <code>dup()</code> were 1 atompic operation, race conditions would be solved. This is <code>dup2(int oldf, int newfd)</code>, it will close <code>newfd</code>, and make <code>newfd</code> the new fd for the file <code>oldfd</code> pointed to.
+It is better than <code>close()</code>+<code>dup()</code></p>
+<p>The maximum capacity for pipes are 4096 bytes, which means any operation with a size over that limit cannot be guaranteed to be atomic.
+This is decalred as a macro <code>PIPE_BUF</code> on Linux, and has the value <code>4096</code>.</p>
+<h2 id="7-2-fifo">7.2 FIFO</h2>
+<p>FIFO is similar to a pipe, except it has a name in the file system and is opened similarly to a regular file, which allows for communication between <strong>unrelated</strong> processes (client &amp; server)</p>
+<p>FIFO has the operations of files (<code>read()</code>, <code>write()</code>, etc), with the read/write end of pipes.</p>
+<p>To create a FIFO use <code>mkfifo(const char* pathname, mode_t mode)</code>
+The <code>mode</code> parameter, is the same as in the <code>create()</code> or <code>open()</code> functions to create a new file.</p>
+<p><strong>Simple Server-Client Example</strong></p>
+<p>Two parts in this example: a server which sends a message, and a client which recieves said message.</p>
+<pre><code class="lang-C">
+<span class="hljs-comment">/*** fifo/server.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;fcntl.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/stat.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+ <span class="hljs-keyword">int</span> main(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span> <span class="hljs-keyword">const</span> *argv[]) {
+ <span class="hljs-comment">/* We usually create FIFOs under
+ system directory /tmp/ */</span>
+ <span class="hljs-keyword">char</span>* server_path = <span class="hljs-string">"/tmp/myfifo"</span>;
+ mkfifo(server_path, <span class="hljs-number">0666</span>);
+ <span class="hljs-comment">/* Open the FIFO just like opening any regular file */</span>
+ <span class="hljs-keyword">int</span> fd = <span class="hljs-built_in">open</span>(server_path, O_WRONLY);
+ <span class="hljs-keyword">int</span> i;
+ <span class="hljs-comment">/* Receive a line from stdin */</span>
+ <span class="hljs-keyword">char</span> str[<span class="hljs-number">1024</span>];
+ <span class="hljs-built_in">for</span> (i = <span class="hljs-number">0</span>; <span class="hljs-built_in">read</span>(<span class="hljs-number">0</span>, str+i, <span class="hljs-number">1</span>) !=<span class="hljs-number">-1</span> &amp;&amp; str[i] != <span class="hljs-string">'\n'</span>; i++);
+ <span class="hljs-comment">/* SEND the line to FIFO */</span>
+ <span class="hljs-built_in">write</span>(fd, str, i+<span class="hljs-number">1</span>);
+ <span class="hljs-comment">/* Close FIFO */</span>
+ <span class="hljs-built_in">close</span>(fd);
+ <span class="hljs-built_in">return</span> <span class="hljs-number">0</span>;
+ }
+</code></pre>
+<p>These code will have the server send a message which is typed to it. It creates a FIFO file called <code>myfifo</code> under <code>/tmp/</code> with an octal permission <code>0666</code></p>
+<p><code>open()</code>: We use <code>O_WRONLY</code> because all we want to do is send messages, or write to the FIFO. There is no benefit to opening with <code>O_RDWR</code>.</p>
+<p><code>write()</code>: Think of FIFO as a bulletin board, the server sends a message by writing to it, and the client received through writing. Pass the FD which you opened the FIFO.</p>
+<p>When the program is ran, it will hang at <code>write()</code></p>
+<p>This is because &quot;the FIFO must be opened on both ends (read/write) before data can be passed. Opening a FIFO on one end blocks until the other end is opened too.&quot;  <a href="https://man7.org/linux/man-pages/man7/fifo.7.html">https://man7.org/linux/man-pages/man7/fifo.7.html</a></p>
+<p>The client code is similar besides the fact that <code>mkfifo()</code> is not needed since it&#39;s already made.</p>
+<pre><code class="lang-C"><span class="hljs-comment">/*** fifo/client.c ***/</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;fcntl.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/stat.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+
+<span class="hljs-keyword">int</span> main(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span> <span class="hljs-keyword">const</span> *argv[]) {
+
+    <span class="hljs-keyword">char</span>* server_path = <span class="hljs-string">"/tmp/myfifo"</span>;
+    <span class="hljs-keyword">int</span> fd = <span class="hljs-built_in">open</span>(server_path, O_RDONLY);
+
+    <span class="hljs-keyword">int</span> len = <span class="hljs-number">0</span>;
+    <span class="hljs-keyword">char</span> str[<span class="hljs-number">1024</span>];
+
+    <span class="hljs-comment">/* Read the message sent out by the server */</span>
+    <span class="hljs-built_in">for</span> (len = <span class="hljs-number">0</span>; <span class="hljs-built_in">read</span>(fd, str+len, <span class="hljs-number">1</span>) != <span class="hljs-number">-1</span> &amp;&amp; str[len] != <span class="hljs-string">'\n'</span>; len++);
+
+    <span class="hljs-comment">/* Print the message out on the terminal */</span>
+    <span class="hljs-built_in">for</span> (size_t j = <span class="hljs-number">0</span>; j &lt; len; j++) <span class="hljs-built_in">write</span>(<span class="hljs-number">1</span>, str+j, <span class="hljs-number">1</span>);
+
+    <span class="hljs-built_in">close</span>(fd);
+    <span class="hljs-built_in">return</span> <span class="hljs-number">0</span>;
+}
+</code></pre>
+<p>Next is to compile the files into binary, and run them using 2 separate terminal windows.</p>
+<p>Typing something on the server terminal will print what was typed to the client terminal.</p>
+<p>Our FIFO is a special file at <code>/tmp/myfifo</code>.
+Once the programs are done, running stat on our FIFO will show it&#39;s size is 0.</p>
+<p>When processes use the FIFO to exchange data, the kernel passes all data internally without writing to the filesystem. This causes the FIFO to be empty on the filesystem, it is solely there to be a reference point so processes can access the pipe using a name in the filesystem. (Paraphrased from  <a href="https://man7.org/linux/man-pages/man7/fifo.7.html">https://man7.org/linux/man-pages/man7/fifo.7.html</a>)</p>
+<p>If we have one server, but multiple clients, the clients may send messages at the same time.</p>
+<p>To ensure these messages don&#39;t get tangled since there is only one FIFO, we can enjoy the fact that <code>read()</code>/<code>write()</code> are atomic operations, and so there won&#39;t be any interruption as long as it is under the capacity <code>PIPE_BUF</code>(4096 bytes)</p>
+<h2 id="7-3-sockets">7.3 Sockets</h2>
+<p>Sockets are like pipes, but they can be used across networks, which allows processes to exchange data despite being on different computers (within a network) using just <code>read()</code> and <code>write()</code>. This is <strong>remote inter-process communication</strong>, they can also be used just like pipes on a single computer.</p>
+<p>2 connection types
+<strong>Connection Oriented Model</strong>: For my gamers in the chat this is like Peer to Peer connection, just like when making a phone call to someone we are connected with the other person on the call. This uses the <strong>Transmission Control Protocol (TCP)</strong></p>
+<p><strong>Connection-Less Model</strong>: Is more like Peer to Server connection for the gamers in the chat, basically like when you have an email convo with someone. No guarantee in the order the messages will arrive the same way they are sent, and no way for the receiver to know the sender if there isn&#39;t a return address. This uses <strong>User Datagram Protocol (UDP)</strong></p>
+<p>For two processes to communicate they need their IP addresses. An IP address has two parts, the internet address and the port number.</p>
+<p>Each server on a machine has a specific port, think of it like an IP address as a company&#39;s main telephone line, and the port is a specific telephone extension within the company. The server uses a specific port for it&#39;s services, and the clients have to know the port to contact the server. A port is a 16 bit int.</p>
+<p>Some reserved ports
+7: Echo servers
+13: Daytime servers
+22: SSH
+25: SMTP
+80: HTTP</p>
+<p>1-1023 are well known ports
+To see all ports in use look at the <code>/etc/services</code> file</p>
+<p>1024-49151 are registered ports, they are not controlled and a service can use it if they arent already occupied</p>
+<p>49152-65536 are ephermeral ports, which can&#39;t be used and assigned automatically by the TCP or UDP for client use.</p>
+<p><code>lsof</code> can be used to view all open files</p>
+<p>to use <code>lsof</code> to view all open ports use
+<code>lsof -Pnl +M -i4</code> the flag
+<code>i4</code> restricts to IPv4</p>
+<p>or use
+<code>netstat -lptu</code> to see listening sockets for <code>TCP</code> and <code>UDP</code>. </p>
+<p>Read the manpage for <code>lsof</code> and <code>netstat</code> to learn more about them.</p>
+<p>A socket address is a combination of a network address and a port.</p>
+<p>To establish communication, the <strong>communication domain</strong> and the <strong>protocol family</strong> must be specified, and both processes need the same protocol.</p>
+<p>Ex: Domain <code>AF_INET</code> specifies that the protocol family is IPV4, and in that family there is a set of protocols. Ex: TCP/UDP. Not all domains give a choice in protocol, Ex: the domain <code>AF_UNIX</code> specifies the protocol family is restricted to the local machine, so there isn&#39;t a choice in protocol.</p>
+<p>When a socket is created, the domain and protocol are two of the arguments to <code>socket()</code>.
+Manpage on <code>socket(2)</code> lists all the domains and possible protocols: <a href="https://www.man7.org/linux/man-pages/man2/socket.2.html">https://www.man7.org/linux/man-pages/man2/socket.2.html</a></p>
+<p>When a socket is created, it must have a type that represents the type of connection.
+Connection oriented communication often use stream sockets of type <code>SOCK_STREAM</code>
+Connection-less communication uses datagram sockets of type <code>SOCK_DGRAM</code></p>
+<p>Raw sockets are of type <code>SOCK_RAW</code>. There are many socket types in Linux, and POSIX requires that the type <code>SOCK_SEQPACKET</code> is supported.</p>
+<h3 id="7-3-2-writing-a-sever">7.3.2 Writing a sever</h3>
+<p>2 parties: 1 server (listening for requests), 1 client (waiting for requests)</p>
+<p>4 steps to make a server</p>
+<ol>
+<li>Create: Create a socket using <code>socket()</code></li>
+<li>Bind: Bind the socket to a local protocol address using <code>bind()</code>, gives the server a &quot;name&quot;</li>
+<li>Listen: Use <code>listen()</code> to make the server ready to listen</li>
+<li>Accept: Enter a loop where connections are repeatedly accepted and processed</li>
+</ol>
+<p><strong>Create</strong></p>
+<p>To create a socket use</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/socket.h&gt;</span></span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">socket</span><span class="hljs-params">(<span class="hljs-keyword">int</span> domain, <span class="hljs-keyword">int</span> type, <span class="hljs-keyword">int</span> protocol)</span></span>;
+</code></pre>
+<p>common options for domain</p>
+<ul>
+<li>AF_INET: IPv4 (most commonly used)</li>
+<li>AF_INET6: IPv6 (the future is here!!)</li>
+<li>AF_UNIX: UNIX domain</li>
+<li>AF_UNSPEC: unspecified</li>
+</ul>
+<p>common options for socket</p>
+<ul>
+<li>SOCK_STREAM: Provides sequenced, reliable, two-way, connection
+based byte streams;</li>
+<li>SOCK_DGRAM: Supports datagrams (connectionless, unreliable
+messages of a fixed maximum length);</li>
+<li>SOCK_SEQPACKET: Provides a sequenced, reliable, two-way
+connection-based data transmission path for datagrams of fixed
+maximum length.</li>
+</ul>
+<p><code>socket()</code> will return a file descriptor to read/write to.</p>
+<p>Example of using <code>socket()</code>: <code>int server_fd = socket(AF_INET, SOCK_STREAM, 0);</code></p>
+<p><strong>Bind</strong></p>
+<p>A generic socket address is defined as follows, it is not specific to any domain.</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/socket.h&gt;</span></span>
+<span class="hljs-keyword">struct</span> sockaddr{
+  <span class="hljs-keyword">sa_family_t</span> sa_family; <span class="hljs-comment">/* address family */</span>
+  <span class="hljs-keyword">char</span> sa_data[]; <span class="hljs-comment">/* socket address */</span> };
+</code></pre>
+<p>When <code>bind()</code> is called, a domain is specified, and each one has a different socket address structure. (ex: <code>AF_INET</code>, <code>AF_UNIX</code>)</p>
+<p><code>AF_INET</code> is defined as</p>
+<pre><code class="lang-c"><span class="hljs-keyword">struct</span> sockaddr_in {
+   <span class="hljs-keyword">sa_family_t</span>    sin_family; <span class="hljs-comment">/* internet addr family */</span>
+   <span class="hljs-keyword">in_port_t</span>      sin_port; <span class="hljs-comment">/* port number */</span>
+   <span class="hljs-keyword">struct</span> in_addr sin_addr;  <span class="hljs-comment">/* IP address */</span>
+   <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> sin_zero[<span class="hljs-number">8</span>]; <span class="hljs-comment">/* padding */</span>
+};
+
+<span class="hljs-keyword">struct</span> in_addr {
+   <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> s_addr; <span class="hljs-comment">/* load with inet_aton() */</span>
+};
+</code></pre>
+<p><strong>Zero Out</strong></p>
+<p>Here is a declaration of <code>sockaddr_in</code>, the first step after declaring it is to replace all data in the memory of the object to be 0, use <code>memset()</code></p>
+<pre><code class="lang-c">struct sockaddr_in server_addr<span class="hljs-comment">;</span>
+memset(<span class="hljs-name">&amp;server_addr</span>, <span class="hljs-number">0</span>, sizeof(<span class="hljs-name">server_addr</span>))<span class="hljs-comment">;</span>
+</code></pre>
+<p>next is to iniditalize each value of the object
+since <code>sin_family</code> indicated the domain, we will use the same domain as the socket we created.
+<code>server_addr.sin_family = AF_INET;</code></p>
+<p>note: sometimes people use <code>PF_INET</code>, they&#39;re mostly equal</p>
+<p><strong>Port Number</strong></p>
+<p>Next is setup the <code>sin_port</code> (port number)
+Linux uses little endian to represent this
+But TCP/IP uses big endian.
+To convert little to big endian use the following functions</p>
+<pre><code class="lang-c"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;arpa/inet.h&gt;</span></span>
+<span class="hljs-keyword">uint32_t</span> htonl(<span class="hljs-keyword">uint32_t</span> hostlong);
+<span class="hljs-keyword">uint16_t</span> htons(<span class="hljs-keyword">uint16_t</span> hostshort);
+<span class="hljs-keyword">uint32_t</span> ntohl(<span class="hljs-keyword">uint32_t</span> netlong);
+<span class="hljs-keyword">uint16_t</span> ntohs(<span class="hljs-keyword">uint16_t</span> netshort);
+</code></pre>
+<p><code>l</code> stands for long
+<code>s</code> stands for short
+<code>h</code> stands for host
+<code>n</code> stands for network</p>
+<p>Since we want to convert byte ordering to the one the network is using, we use host to network
+We can just use the long format.
+<code>server_addr.sin_port = htonl(25555);</code>
+We use port <code>25555</code> because it is large enough to be safe for our purposes, any port works as long as it does not interfere with reserved ports</p>
+<p><strong>IP Address</strong></p>
+<p>To set up the IP address</p>
+<p>The IP address is stored in another struct called <code>in_addr</code>, which only has one variable called <code>s_addr</code>,  to initialize it do
+<code>server_addr.sin_addr.s_addr = inet_addr(&quot;127.0.0.1&quot;);</code> where <code>inet_addr()</code> takes a that looks like an IP address in the IPv4 address dotted decimal notation <code>xx.xx.xx.xx</code>, and converts it to an int value usable as an internet address.</p>
+<p><strong>Binding</strong></p>
+<p><code>bind()</code> takes in the socket file descriptor returned by <code>socket()</code>, and an address structure like above, and binds them together to make the end of a socket that processes on the internet can use to find the server</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/types.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys.socket.h&gt;</span></span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">bind</span><span class="hljs-params">(<span class="hljs-keyword">int</span> sockfd, <span class="hljs-keyword">const</span> <span class="hljs-keyword">struct</span> sockaddr* address, <span class="hljs-keyword">socklen_t</span> addrlen)</span></span>;
+</code></pre>
+<p>Putting these steps together makes this basic binding process example</p>
+<pre><code class="lang-C"> struct sockaddr_in server_addr<span class="hljs-comment">;</span>
+ memset(&amp;server_addr, <span class="hljs-number">0</span>, sizeof(server_addr))<span class="hljs-comment">;</span>
+ server_addr.sin_family = AF_INET<span class="hljs-comment">;</span>
+ server_addr.sin_port = htons(<span class="hljs-number">25555</span>)<span class="hljs-comment">;</span>
+ server_addr.sin_addr.s_addr = inet_addr(<span class="hljs-string">"127.0.0.1"</span>)<span class="hljs-comment">;</span>
+ <span class="hljs-keyword">bind(server_fd, </span>(struct sockaddr *) &amp;server_addr, sizeof(server_addr))<span class="hljs-comment">;</span>
+</code></pre>
+<p><strong>Listen</strong></p>
+<p>The socket so far is an active socket that can connect to other sockets itself (ex: dialing a phone number)
+This is a server, so we want to be listening for connections instead of sending connections, so we use <code>listen()</code> to prepare listening for incoming messages and how many we can have at once in the queue.</p>
+<pre><code class="lang-c"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/socket.h&gt;</span></span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">listen</span><span class="hljs-params">(<span class="hljs-keyword">int</span> sockfd, <span class="hljs-keyword">int</span> queue_size)</span></span>;
+</code></pre>
+<p><code>sockfd</code> is the already binded socket, and the second is the maximum amount of pending connections allowed in the queue.</p>
+<p>Once <code>listen()</code> has returned, two queues are created. One is for incoming connection requests that haven&#39;t completed the TCP handshake protocol, the other stores incoming requests that have completed the handshake.</p>
+<p>An example of listen where there is at most 5 incoming client connection requests is as follows</p>
+<pre><code class="lang-c">if (<span class="hljs-name">listen</span>(<span class="hljs-name">server_fd</span>,<span class="hljs-number">5</span>) == <span class="hljs-number">0</span>) printf(<span class="hljs-string">"Listening\n"</span>)<span class="hljs-comment">;</span>
+else perror(<span class="hljs-string">"listen"</span>)<span class="hljs-comment">;</span>
+</code></pre>
+<p><strong>Accept</strong></p>
+<p>We will enter a loop to accept new connections and process them through using <code>accept()</code></p>
+<pre><code class="lang-c"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/types.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/socket.h&gt;</span></span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">accept</span><span class="hljs-params">(<span class="hljs-keyword">int</span> sockfd, <span class="hljs-keyword">struct</span> sockaddr* addr, <span class="hljs-keyword">socklen_t</span>* addrlen)</span></span>;
+</code></pre>
+<p><code>accept()</code> will return a file descriptor for the incoming message, the fd will be used to recieve and send messages.</p>
+<pre><code class="lang-c"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sockaddr_in</span></span> in_addr;
+socklen_t addr_size;
+<span class="hljs-keyword">int</span>     client_fd;
+addr_size = <span class="hljs-keyword">sizeof</span>(in_addr);
+client_fd = accept(server_fd, (<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sockaddr</span></span> *) &amp;in_addr, &amp;addr_size);
+</code></pre>
+
     </main>
   </body>
 </html>

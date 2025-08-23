@@ -57,9 +57,9 @@ pointerbox1-&gt;<span class="hljs-built_in">width</span> = <span class="hljs-num
 <p><code>C
  struct S1 { char a; int b; char c; };
  struct S2 { char a; char c; int b; };</code> S2 saves 4 bytes</p>
-        <img src="./images3922/1.png" alt="img id 1, if you see this msg email me!">
-        <img src="./images3922/2.png" alt="img id 2, if you see this msg email me!">
-        <img src="./images3922/3.png" alt="img id 3, if you see this msg email me!">
+        <img src="./images3922/1.png" alt="img id 1, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3922/2.png" alt="img id 2, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3922/3.png" alt="img id 3, if you see this msg email me with the class & chapter it was found in!">
 <p>Using bit-fields also makes structures more compact</p>
 <p>The smallest data type, <code>char</code> can represent data in the range of [0, 2^8-1]. Though it is common to only need variables that represent 1 or 2 bits, and using <code>char</code> for them will waste space.</p>
 <p>Given the example</p>
@@ -103,7 +103,7 @@ season = season student was born</p>
  <span class="hljs-keyword">return</span>;
 }
 </code></pre>
-        <img src="./images3922/4.png" alt="img id 4, if you see this msg email me!">
+        <img src="./images3922/4.png" alt="img id 4, if you see this msg email me with the class & chapter it was found in!">
   <p>In C some compilers need the function header before the function. The function header is the same as when you make the function, but instead of having <code>{</code> and then code, it just has a semicolon.</p>
 <p>ex:<code>double get_volume(double length, double width, double height);</code>
 the parameter names are optional so <code>double get_volume(double, double, double)</code> is also valid</p>
@@ -115,7 +115,7 @@ argv = array of arguments all arguments, first index is the command itself, in C
 <p>the C standard library <code>&lt;stdlib.h&gt;</code> has 2 macros for exiting, <code>EXIT_SUCCESS</code> and <code>EXIT_FAILURE</code>, these are used to determine if the program termination was successful or not. </p>
 <p>To see the exit code of a previously executed program run <code>echo $?</code> after running the program.</p>
 <p>Using a return statement such as <code>return 0</code> in a C <code>main()</code> function will return to the C startup-routine, which will call <code>exit()</code>, if we call <code>exit()</code> or pass a code in such as <code>exit(0)</code>  it will call up the exit handler, and then perform I/O cleanup that will cleanup the buffer, and then call <code>_exit()</code> which is a system call that never returns and will exit the process entirely. Figure 2.6 below shows an image of the exit process in C</p>
-        <img src="./images3922/5.png" alt="img id 5, if you see this msg email me!">
+        <img src="./images3922/5.png" alt="img id 5, if you see this msg email me with the class & chapter it was found in!">
 <h2 id="2-2-c-standard-i-o-library">2.2 C Standard I/O Library</h2>
 <p>The C standard i/o libary is <code>&lt;stdio.h&gt;</code> and includes all the functions needed to interact with files, the terminal, strings, and anything else to process inputs and outputs.
 See: <a href="https://www.ibm.com/docs/en/zos/3.1.0?topic=files-stdioh-standard-input-output">https://www.ibm.com/docs/en/zos/3.1.0?topic=files-stdioh-standard-input-output</a> for documentation</p>
@@ -245,7 +245,7 @@ Then define it&#39;s type as <code>int (*func_ptr)(int, int);</code> where <code
 </code></pre>
 <p><code>\</code> indicated that the macro is not over at that line.
 Since <code>#define</code> is read line by line, make sure each macro is recognized as 1 line.</p>
-        <img src="./images3922/6.png" alt="img id 6, if you see this msg email me!">
+        <img src="./images3922/6.png" alt="img id 6, if you see this msg email me with the class & chapter it was found in!">
         <p>Macros can also be used to control which parts of the code to compile. and have this structure, this is called <strong>conditional macros</strong></p>
 <pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">ifdef</span> <span class="hljs-meta-string">&lt;symbol1&gt;</span></span>
    <span class="hljs-comment">/* Stuff that'll be compiled
@@ -364,7 +364,7 @@ Done!
 </code></pre><p>As you can see, the <code>echo</code> commands are not being ran line by line like in a bash script. It is actually more like a tree structure (see picture below)
 Makefiles actually execute from bottom to top rather than top to bottom, for example, to execute <code>dep1</code>, both <code>dep1.1</code> and <code>dep1.2</code> must be executed first.</p>
 <p>Though rules themselves are executed linearly, and if a command is prefixed with an <code>@</code>, it will be executed as usual. If there is no <code>@</code> present, the command itself will also print. There is also a target called clean which removes some of the by-products of executing the makefile, it can be ran by using <code>make clean</code>.</p>
-        <img src="./images3922/7.png" alt="img id 7, if you see this msg email me!">
+        <img src="./images3922/7.png" alt="img id 7, if you see this msg email me with the class & chapter it was found in!">
 <p>As an example, lets say we have a C project for matrix operations and it&#39;s structure is shown below in 2.9.</p>
 <p>To write the makefile for this project, the goal is to make <code>a.out</code> using <code>transpose.o</code>, <code>linear.o</code>, <code>scalar.o</code>, and <code>external.so</code>. Note those <code>.o</code> files come must also be made themselves too, we are only given the <code>.c</code> files at the bottom of the tree structure. </p>
 <p>Therefore the first rule will require <code>transpose</code>, <code>linear</code>, and <code>scalar</code> to be ran, and then it will run <code>gcc</code> on those object files with <code>external.so</code> to generate <code>a.out</code></p>
@@ -394,7 +394,7 @@ linear: linear<span class="hljs-selector-class">.c</span> cancel.c
 </code></pre>
 <p>Note <code>$^</code> is a macro which refers to all files listed in the dependencies of the target.</p>
 <p>You can also write loops in targets, add suffixes, special macros, and more, but for the purposes of this course, this stuff is not included.</p>
-        <img src="./images3922/8.png" alt="img id 8, if you see this msg email me!">
+        <img src="./images3922/8.png" alt="img id 8, if you see this msg email me with the class & chapter it was found in!">
     </main>
   </body>
 </html>

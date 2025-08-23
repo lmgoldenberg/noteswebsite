@@ -6,7 +6,444 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 6</p>
+        <h1 id="6-process-control-subsystem">6 Process Control Subsystem</h1>
+<h2 id="6-1-introduction">6.1 Introduction</h2>
+<p>When we invoke a program, the actual instance of that program is a <strong>process</strong>.</p>
+<p>A process starts when it is executed, and ends when it <code>_exit()</code> is called and returns to the kernel. (Refer to 2.6 attached below)</p>
+<p>There are also many background processes including the OS itself.</p>
+<p>In CS382 we learn about the virtual memory space of every process, which is the readonly, read/write, heap, and stack segments. In reality there is more to that. See image 6.1 below, it is called a <strong>process image</strong> and it is the layoutof a process</p>
+<p>Two portions of a layout process: user-addressable, and kernel-addressable</p>
+<p>See image 6.2 below, the kernel-addressable portions are all in the kernel space, while the user-addressable ones are in the user space</p>
+<p>Each running process also has a process structure (usually called the <strong>process control block (PCB)</strong>) to store all of it&#39;s status and info.</p>
+<p>When a process starts to run, the kernel creates an object that is the PCB which has the info the kernel needs to manage the process. In Linux this is the task structure/process descriptor. It is declared as <code>struct task_struct</code> in <code>&lt;linus/sched.h&gt;</code>. The struct has ~800 lines and 150+ fields, and is almost 8KB in size. We only care for the important fields. (See line 813 in this github for more detail <a href="https://github.com/torvalds/linux/blob/master/include/linux/sched.h#L728">https://github.com/torvalds/linux/blob/master/include/linux/sched.h#L728</a>)</p>
+        <img src="./images3926/1.png" alt="img id 1, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3926/2.png" alt="img id 2, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3926/3.png" alt="img id 3, if you see this msg email me with the class & chapter it was found in!">
+<p>The important fields of the task_struct are as follows</p>
+<ul>
+<li>Process ID (or PID);</li>
+<li>Parent process ID (or pointer to parent’s PCB);</li>
+<li>Pointer to list of children of the process;</li>
+<li>Process priority for scheduling, statistics about CPU usage and last priority;</li>
+<li>Process status (run, wait, etc.);</li>
+<li>Signal information (signals pending, signal mask, etc.);</li>
+<li>Machine state (the contents of the registers, program counter, etc.);</li>
+<li>Timers;</li>
+<li>Current working directory.</li>
+</ul>
+<p>Many of the fields are also structs, and can have info like</p>
+<ul>
+<li>Process’s group id (in <code>struct task_group</code> );</li>
+<li>User IDs associated with the process;</li>
+<li>Memory map for the process (where all segments start, and so on);</li>
+<li>File descriptor table (in</li>
+<li>struct files_struct* files );</li>
+<li>Accounting information;</li>
+<li>Other statistics that are reported such as page faults, etc.;</li>
+<li>Signal actions;</li>
+<li>Pointer to the user structure.</li>
+</ul>
+<p>The most important of these fields is the Process ID (PID), which is a non-negative int that handles processes. Each process has it&#39;s own unique PID which is assigned by the kernel when the process starts running.</p>
+<p>For every running process, the system also maintains a virtual file system under the <code>/proc/</code> directory. It&#39;s virtual because it doesn&#39;t take any disc space, its just in the form of a file to make viewing process statuses easier.</p>
+<p>The following quote is from <em>The Linux Programming Interface, Kerrisk, pp.224.</em>
+&quot;This file system resides under the <code>/proc</code> directory and contains various files that expose kernel information, allowing processes to conveniently read that information, and change it in some cases, using normal file I/O system calls. The <code>/proc</code> file system is said to be virtual because the files and sub-directories that it contains don’t reside on a disk. Instead, the kernel creates them “on the fly” as processes access them.&quot;</p>
+<p>Each process has 5 possible states</p>
+<ul>
+<li><strong>Running (R)</strong>: Processes that are actively using CPU</li>
+<li><strong>Uninterruptable Sleep (D)</strong>: Not doing anything and don&#39;t use CPU, though do take up memory space, ex: a program is waiting for user input</li>
+<li><strong>Interruptible Sleeping (S)</strong>: Similar to D, but it will respond to signals </li>
+<li><strong>Stopped (T)</strong>: Similar to sleeping, but it&#39;s done manually, and can be manually put back into R state.</li>
+<li><strong>Zombie (Z)</strong>: Finished so does not take any resources (ex: CPU and memory), for some reason still appear in process table, will eventually go away.</li>
+</ul>
+<p>To see the states of all running processes, use <code>ps -l</code>, and look at the <code>S</code> column.</p>
+<p>To view the states of all currently running processes, use the <code>htop</code> or <code>pstree</code> commands. Image 6.3 (below) is an example output of <code>htop</code>. When looking at the <code>Command</code> column, the processes are organized in a tree structure. If a process were to be a node, it&#39;s parent node is the parent process. This hierarchy stays in the entire system, and no process can be separated from it.</p>
+<p>Each tree structure has a root, the root in the system process hierarchy is the process with a PID of <code>1</code>. It is invoked by <code>/sbin/init</code>. This is the first process that ran by the machine once it is turned on, and it &quot;coordinates the rest of the boot processes and configures the rest of the environment for use&quot; (<a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/4/html/reference_guide/s2-boot-init-shutdown-init">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/4/html/reference_guide/s2-boot-init-shutdown-init</a>) This first process will be in the system for the entire time it is on.</p>
+<p>The <code>htop</code> command itself can be found in the process table. In 6.3 (below), the process for <code>htop</code> is highlighted, it is the child of the process <code>zsh</code>, which is the shell interpreter running in the terminal.</p>
+<p>How Linux creates a hierarchy structure will be covered in sections 6.2 and 6.3
+6.2 Covers how to create a new process in a process
+6.3 Covers how to run existing executables after creating a new process.</p>
+        <img src="./images3926/4.png" alt="img id 4, if you see this msg email me with the class & chapter it was found in!">
+<h2 id="6-2-process-control">6.2 Process Control</h2>
+<p>Each process has a unique PID of type <code>pid_t</code> declared in <code>&lt;sys/types.h&gt;</code></p>
+<p>You can get the current PID and parent PID by using <code>getpid();</code> and <code>getppid();</code></p>
+<p>When running a program from the terminal, the interpreter creates a process for it. We can make child processes under our program&#39;s process by using <code>fork()</code></p>
+<p>The program that calls <code>fork()</code> is the <strong>parent process</strong>, and the program invoked by it is the <strong>child process</strong></p>
+<p>When a child process is created, it is a copy of the parent process&#39; process image in that everything is identical but their PIDs. Though the child starts executing any code starting from the line <code>fork()</code> is called, including the <code>fork()</code> line itself.</p>
+<p>Here is an example of using <code>fork()</code></p>
+<pre><code class="lang-C"> <span class="hljs-comment">/*** pid1.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/types.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+     <span class="hljs-keyword">pid_t</span> p = fork();
+     <span class="hljs-keyword">if</span> (p &lt; <span class="hljs-number">0</span>) {
+        perror(<span class="hljs-string">"fork"</span>);
+        <span class="hljs-keyword">return</span><span class="hljs-number">-1</span>;
+     }
+     <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (p == <span class="hljs-number">0</span>) { <span class="hljs-comment">/* child */</span>
+       <span class="hljs-built_in">printf</span>(<span class="hljs-string">"I am the child\n"</span>);
+     <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+     }
+     <span class="hljs-keyword">else</span> { <span class="hljs-comment">/* parent */</span>
+       <span class="hljs-built_in">printf</span>(<span class="hljs-string">"I am the parent of %d\n"</span>, pid);
+     <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+     }
+ }
+</code></pre>
+<p>In the parent process, <code>fork()</code> returns the child&#39;s PID, and in the child process <code>fork()</code> returns <code>0</code>. A successful fork always returns twice. On an error, <code>fork()</code> will return a negative value.</p>
+<p>This is the only way for a parent to get it&#39;s child&#39;s PID.</p>
+<p>Listed are what child copies from the parent, and the differences between the two. </p>
+<p><strong>Properties inherited by child</strong></p>
+<ul>
+<li>Real user ID, real group ID, effective user ID, and effective group ID;</li>
+<li>Supplementary group IDs;</li>
+<li>Process group ID;</li>
+<li>Session ID;</li>
+<li>Controlling terminal;</li>
+<li>The set-user-ID and set-group-ID flags;</li>
+<li>Current working directory;</li>
+<li>Root directory;</li>
+<li>File mode creation mask;</li>
+<li>Signal mask and dispositions;</li>
+<li>The close-on-exec flag for any open file descriptors;</li>
+<li>Environment;</li>
+<li>Attached shared memory segments;</li>
+<li>Memory mappings;</li>
+<li><p>Resource limits.</p>
+<p><strong>Differences between parent and child</strong></p>
+</li>
+<li>The return values from fork() are different;</li>
+<li>The PIDs are different;</li>
+<li>The two processes have different Parent Process IDs (PPIDs): the PPID of the child is the parent; the PPID of the parent doesn’t change;</li>
+<li>The child’s process timer values are set to 0;</li>
+<li>File locks set by the parent are not inherited by the child;</li>
+<li>Pending alarms are cleared for the child;</li>
+<li>The set of pending signals for the child is set to the empty set.</li>
+</ul>
+<p>If a process has terminated, it&#39;ll disappear from the process table.</p>
+<p>The system also has to maintain process hierarchy always.</p>
+<p>In the event the parent terminates before it&#39;s children, the children are now <strong>orphan processes</strong> and will be <strong>adopted/re-parented</strong> by the process <code>init</code> which has the PID of <code>1</code>.</p>
+<p>If the child process terminates first and the parent later, the child becomes a <strong>zombie/defunct process</strong>. There do not take CPU resources, but they take up a PID.</p>
+<p>There are only 2^32 (4 bytes) unique PIDs, and if all are occupied, no processes can be started. (<code>pid_t</code> is essentially an <code>unsigned int</code>)</p>
+<p>Since we can&#39;t control how long the parent and children processes run, we will end up with either an orphan that puts stress on the system, or a zombie that is nasty.</p>
+<p>The only way to not not leave either process behind and make sure orphans or zombies are not created, is to use the <code>wait(int* status)</code> function.</p>
+<p>If a process starts executing <code>wait()</code> when there are no children, then a <code>-1</code> is immedietly returned. If there is atleast 1 child process, the program will halt until one has finished. Once one has finished, the program will resume, and the return value of <code>wait()</code> will be the PID of the finished process.</p>
+<p>The int pointer passed into <code>wait()</code> is modified based on the status of the child process. The value the pointer points to will become a <code>0</code> when the child process terminates without error, otherwise it will be modified to a specific error code.</p>
+<p>There are macros to represent each way a process can terminate.</p>
+<pre><code class="lang-C"><span class="hljs-comment">/* Returns TRUE if terminated normally */</span>
+ <span class="hljs-selector-tag">WIFEXITED</span>(status)
+ <span class="hljs-comment">/* Returns TRUE if terminated by a signal */</span>
+ <span class="hljs-selector-tag">WIFSIGNALED</span>(status)
+
+ <span class="hljs-comment">/* Returns TRUE if stopped by delivery of a signal */</span>
+ <span class="hljs-selector-tag">WIFSTOPPED</span>(status)
+ <span class="hljs-comment">/* Returns TRUE if the child produced a core dump */</span>
+ <span class="hljs-selector-tag">WCOREDUMP</span>(status)
+</code></pre>
+<p><code>WCOREDUMP()</code> is not specified in all UNIX implementations, so when implementing it, check if it exists on the machine as such.</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">ifdef</span> WCOREDUMP</span>
+ <span class="hljs-keyword">int</span> d = WCOREDUMP(status);
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">else</span></span>
+ <span class="hljs-keyword">int</span> d = <span class="hljs-number">0</span>;
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">endif</span></span>
+</code></pre>
+<p>If <code>exit()</code> is called with a value (ex: <code>exit(10)</code>) in a child process, the parent&#39;s wait will catch it when using <code>WEXITSTATUS(status)</code></p>
+<p>Here is an example of using <code>wait()</code></p>
+<pre><code class="lang-C"><span class="hljs-comment">/*** waitexit.c ***/</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/wait.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">int</span>   stat;
+    <span class="hljs-keyword">pid_t</span> pid = fork();
+
+    <span class="hljs-comment">/* child */</span>
+    <span class="hljs-keyword">if</span> (pid == <span class="hljs-number">0</span>) <span class="hljs-built_in">exit</span>(<span class="hljs-number">10</span>);
+
+    <span class="hljs-comment">/* parent */</span>
+    <span class="hljs-keyword">else</span> {
+        wait(&amp;stat);
+        <span class="hljs-built_in">printf</span>(<span class="hljs-string">"The child said %d!\n"</span>, WEXITSTATUS(stat));
+    }
+    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+</code></pre>
+<p>The <code>waitpid(pid_t pid, int* status, int options</code> is another option, it is similar but more flexible.</p>
+<p><code>pid</code> can be any of the following cases</p>
+<ul>
+<li>&lt;-1: wait for any child process who&#39;s process group ID is equal to the absolute value of PID.</li>
+<li>-1: As long as one terminates, the parent stops waiting for others</li>
+<li>0: Wait for any child process who&#39;s process group ID is equal to that of the calling process.</li>
+<li><blockquote>
+<p>0: Wait for the child whose process ID is equal to the value of <code>pid</code></p>
+</blockquote>
+</li>
+</ul>
+<p><code>options</code> can be 1 or more (through using <code>||</code>)
+<code>WCONTINUED</code>: Returns if a stopped child has been resumed through the <code>SIGCONT</code> signal.
+<code>WNOHANG</code>: Returns immediately if no child exited (no hanging children)
+<code>WUNTRACED</code>: Returns if a child has stopped.</p>
+<h2 id="6-3-executing-programs-spoiler-we-use-pyke-r-for-the-homies-who-know-">6.3 Executing Programs (spoiler we use pyke r for the homies who know)</h2>
+<p>To create the process hierarchy in a system, the first step is to <code>fork()</code> atleast 1 child process from <code>init</code>. The next step is to execute different programs in each child process.</p>
+<p>Most programs are already in executable form, so how do the child processes use them? Ex: if we want to use the executable <code>/usr/bin/sort</code> in the terminal or in bash, it&#39;s easy to just type <code>sort</code>, but within C we can use an <code>exec</code> function.</p>
+<p>An <code>exec</code> function refers to a group of functions which allow us to use the <code>execve()</code> sys call in our program. They are described in image 6.3(below) and clarified below.</p>
+<p>Here is each <code>exec()</code>&#39;s header</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+<span class="hljs-keyword">extern</span> <span class="hljs-keyword">char</span>** environ;
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">execl</span> <span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* path, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* arg, ...)</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">execv</span> <span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* path, <span class="hljs-keyword">char</span>* <span class="hljs-keyword">const</span> argv[])</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">execle</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* path, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* arg,..., <span class="hljs-keyword">char</span>* <span class="hljs-keyword">const</span> envp[])</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">execve</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* path, <span class="hljs-keyword">char</span>* <span class="hljs-keyword">const</span> argv[], <span class="hljs-keyword">char</span>* <span class="hljs-keyword">const</span> envp[])</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">execvp</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* file, <span class="hljs-keyword">char</span>* <span class="hljs-keyword">const</span> argv[])</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">execlp</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* file, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* arg, ...)</span></span>;
+</code></pre>
+<p><strong>Suffix p</strong></p>
+<p>If the letter <em>p</em> is attached to the end of <code>exec</code>, we only need to provice the name of the binary we want to execute (ex: <code>echo</code> or <code>ls</code>), while if it does not have <em>p</em>, then we need to use the complete path (ex: <code>/bin/echo</code>, <code>/bin/ls</code>)</p>
+<p>The first parameter has to be a binary file (ex: a.out or a command), or a script starting with a line of the form <code>#!interpreter [optional-arg]</code></p>
+<p><strong>Passing Vector VS List</strong></p>
+<p>The other suffix <code>l</code> or <code>v</code> determines whether a list or vector will be passed into the <code>exec()</code></p>
+<p>Here is an example of using both to perform <code>echo hello world</code></p>
+<pre><code class="lang-C"> <span class="hljs-keyword">char</span>* arguments[] = {<span class="hljs-string">"echo"</span>, <span class="hljs-string">"hello"</span>, <span class="hljs-string">"world"</span>, <span class="hljs-literal">NULL</span>};
+ execl(<span class="hljs-string">"/bin/echo"</span>, <span class="hljs-string">"echo"</span>, <span class="hljs-string">"hello"</span>, <span class="hljs-string">"world"</span>, <span class="hljs-literal">NULL</span>);
+ execv(<span class="hljs-string">"/bin/echo"</span>, arguments);
+</code></pre>
+<p>The <code>e</code> suffix which is optional and is used when wanting to pass an environment variable into <code>exec()</code>.</p>
+<p>Attached is a table with an example of each <code>exec()</code></p>
+        <img src="./images3926/5.png" alt="img id 5, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3926/6.png" alt="img id 6, if you see this msg email me with the class & chapter it was found in!">
+<p><strong>Process Image Replacement</strong></p>
+<p><code>exec()</code> overwrites the process image of the process it is called in. This means that when the program called by <code>exec()</code> terminates, so does our process.</p>
+<p><code>ls &gt; listing</code> will redirect the output from <code>ls</code> to a file named <code>listing</code></p>
+<p>To redirect an <code>exec()</code> call is a bit trickier. We can use two facts.</p>
+<ol>
+<li><p>System command programs always print to File Descriptor(FD) <code>1</code> and <code>2</code> which are <code>stdout</code> and <code>stderr</code> respectively.</p>
+</li>
+<li><p>When <code>exec()</code> is called, the process image will be replaced by the binary we are executing, but only the user-addressable portion, the kernel-addressable portion stays the same.</p>
+</li>
+</ol>
+<p>The FD table is in the kernel-addressable portion, which means if we change what FD<code>1</code> and FD<code>2</code> refer to, we can change where the <code>exec()</code> will output.</p>
+<p>To do this do the following steps</p>
+<ol>
+<li><code>fork()</code> a new process</li>
+<li>In the new process <code>close(1)</code></li>
+<li>In the new process <code>open(&quot;listing&quot;,  O_WRONLY | O_CREAT | O_TRUNC)</code></li>
+<li>Use <code>exec()</code> on ls</li>
+</ol>
+<p>This will cause the output of <code>ls</code> to be in the <code>listing</code> file.</p>
+<p><strong>The <code>system()</code> function</strong></p>
+<p><code>system()</code> just takes the same command you would input into the terminal as a string and it runs it.
+Ex: <code>system(&quot;/usr/bin/ls-a ./&quot;);</code></p>
+<p><code>system()</code> uses the <code>/bin/sh</code> interpreter (the shell) which is the same thing bash uses to run the commands passed in. This means it can easily handle variables being passed into it.</p>
+<p>Below are three examples of <code>system()</code>, <code>execl</code> using variables improperly, and <code>execl</code> using variables properly.</p>
+<pre><code class="lang-C"> <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span>* argv[])</span> </span>{
+   system(<span class="hljs-string">"/usr/bin/echo $PATH"</span>); <span class="hljs-comment">//will output the value of $PATH</span>
+   execl(<span class="hljs-string">"/bin/bash"</span>, <span class="hljs-string">"bash"</span>, <span class="hljs-string">"-c"</span>, <span class="hljs-string">"\"echo $PATH\""</span>,(<span class="hljs-keyword">char</span>*), <span class="hljs-literal">NULL</span>); <span class="hljs-comment">//proper example will output the value of $PATH</span>
+   execl(<span class="hljs-string">"/usr/bin/echo"</span>, <span class="hljs-string">"echo"</span>, <span class="hljs-string">"$PATH"</span>, <span class="hljs-literal">NULL</span>); <span class="hljs-comment">// will just output $PATH</span>
+   <span class="hljs-built_in">fprintf</span>(<span class="hljs-built_in">stderr</span>, <span class="hljs-string">"execl() failed to run.\n"</span>);
+   <span class="hljs-built_in">exit</span>(EXIT_FAILURE);
+ }
+</code></pre>
+<h2 id="6-4-organization-of-processes">6.4 Organization of Processes</h2>
+<p>Most of the programs we run are <strong>controlling foreground processes</strong>, which means we wait until they finish the task. Ex: <code>apt-get</code> to install a software. When installing we need to wait for it to finish before we can type the next command.</p>
+<p>Sometimes we want to start a process, and send it to the background so we can still interact with the terminal, these are <strong>background processes</strong>.</p>
+<p>Take the infinite loop program below</p>
+<pre><code class="lang-C"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span>{
+  <span class="hljs-keyword">while</span>(<span class="hljs-number">1</span>);
+}
+</code></pre>
+<p>Upon compilation <code>a.out</code> is generated, and when ran using <code>./a.out</code> it will occupy the terminal. If we were to run <code>./a.out &amp;</code>, it will become a background process.</p>
+<p>After <code>./a.out &amp;</code>, we will see an output in the form <code>[1] 109468</code>, where <code>1</code> is the job number, and <code>109468</code> is the PID</p>
+<p>The <code>jobs</code> command can be used to see all background jobs.</p>
+<p>To return a job to the foreground, call <code>fg</code> on it&#39;s job number.</p>
+<p>Ex: we want to bring job <code>10</code> back to the foreground, so we run <code>fg 10</code></p>
+<p>To send it back to the background, we first need to &quot;stop&quot; it by using <code>Ctrl+Z</code>, which effectively pauses it, and then run <code>bg 10</code> to put it back into the background.</p>
+<p><strong>Groups and Sessions</strong></p>
+<p>For each process, in addition to PID, PPID, there is also a Process Group ID (PGID) which represents the <strong>process group</strong> the process uniquely belongs to.</p>
+<p>To get the PGID, use <code>getpgrp();</code> in C, it rill return the PGID of the process it is called in.</p>
+<p><code>setpgid(pid_t pid, pid_t pgid)</code> allows us to change the PGID of a process.</p>
+<p>A group of processes is called a process group.
+A group of process groups is called a <strong>session</strong></p>
+<p>Each session has a session ID or SID, you can find it by using <code>getsid(pid_t pid);</code></p>
+<p>When the terminal is started, the process of the terminal makes a session.</p>
+<p>*Making sessions isn&#39;t part of the course don&#39;t worry about it</p>
+<p>From <em>From The Linux Programming Interface, Kerrisk, pp.700.</em>
+Each process in a session share 1 <strong>controlling terminal</strong> which is established when the session leader opens a terminal device. A terminal can control at most 1 session.</p>
+<p>When a we open a new terminal window, it launches bash, and bash becomes the session leader and it&#39;s PID becomes the session ID.</p>
+<p><strong>Relations</strong>
+This section is from <em>The Linux Programming Interface, Kerrisk, pp.701. </em></p>
+<p>Refer to figure 6.10(below) to understand the relationship between the different IDs</p>
+<p>Let&#39;s say we have the following commands entered in a terminal</p>
+<pre><code class="lang-bash"><span class="hljs-variable">$ </span>echo <span class="hljs-variable">$$</span>
+<span class="hljs-number">400</span>
+<span class="hljs-variable">$ </span>find / <span class="hljs-number">2</span>&gt; <span class="hljs-regexp">/dev/null</span> | wc-l &amp;
+[<span class="hljs-number">1</span>] <span class="hljs-number">659</span>
+<span class="hljs-variable">$ </span>sort &lt; longlist | uniq-c
+</code></pre>
+<p>The first command will show the PID of the bash running in the terminal. In this case it is <code>400</code> and it is also the SID.</p>
+<p>The <code>|</code>(pipe) operator in the second command will cause <code>find</code>&#39;s stdout to be sent to <code>wc</code>, while it&#39;s stderr will be discarded in <code>/dev/null</code>. Since there is a <code>&amp;</code>, both programs will be background processes, and since they are related through the pipe operator, they will form a process group. The leader will be the first command, in this case <code>find</code>. Both will have a PPID of <code>400</code> because they are child processes of the bash. The third command can be typed without waiting for this line to finish since they are in the background</p>
+<p>The third command creates a group as well, but since there is no <code>&amp;</code> to send it to the background, we must wait for them to finish before we can type a 4th command.</p>
+        <img src="./images3926/7.png" alt="img id 7, if you see this msg email me with the class & chapter it was found in!">
+<h2 id="6-5-process-file-descriptions">6.5 Process &amp; File Descriptions</h2>
+<p>The relations between file descriptors and processes can be confusing.</p>
+<p>For all opened files, the kernel uses a <strong>system-wise</strong> open file table, where each element is a file description object. When a new file is opened, a new object is created and added to the table. When one is closed, it&#39;s object is destroyed.</p>
+<p>Since it is system-wide, all processes share it. There is also a file descriptor table in each process to track each file opened in that process.</p>
+<p>See 6.1(below) to understand the relation</p>
+<p>The file-descriptor table can be found in <code>/proc/&lt;PID&gt;/fd/</code></p>
+<p><strong>Single Process</strong></p>
+<p>In a single process, 1 file can be opened multiple times.
+Each time <code>open()</code> is called to open the same file, it will make a new file description, and a new file descriptor will be returned. Even if there are multiple file descriptors on one file, each tracks the offset <code>f_pos</code> individually. See figure 6.12(below) for example</p>
+<p>When any system call that can change <code>f_pos</code> (ex: <code>read()</code>, <code>lseek()</code>, etc), is called, on a file with multiple descriptors, each will have their own <code>f_pos</code>.</p>
+<p><strong>Unrelated Processes</strong></p>
+<p>A file can be opened by unrelated processes as well, if two processes call <code>open()</code> on the same file, the open(system-wide) file table will have two entries for each of them. Each process will have it&#39;s own description and <code>f_pos</code>. If only 1 of the 2 were to call <code>write()</code>, only the <code>f_pos</code> related to that process will be updated, the other will remain the same.</p>
+<p>Be careful that since processes are scheduled by the kernel, if both processes were to call <code>write()</code>, we can&#39;t predict which process will execute <code>write()</code> so we can&#39;t predict what the file will look like in the end.</p>
+        <img src="./images3926/8.png" alt="img id 8, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3926/9.png" alt="img id 9, if you see this msg email me with the class & chapter it was found in!">
+<p><strong>Parent-Child Processes</strong></p>
+<p>Calling <code>fork()</code> will make a child process, which is a complete copy of the parent.</p>
+<p>The child also copies the file descriptor table.</p>
+<p>If a file is opened before creating a child process, both the parent and child share one file description and <code>f_pos</code>.</p>
+<p>If both the parent and child open the same file after the child is created, each will have a separate file description and <code>f_pos</code>.</p>
+<p>We need to be careful about functions that change <code>f_pos</code> such as <code>read()</code>, <code>write()</code>, <code>lseek()</code>, etc.</p>
+<h2 id="6-6-signals">6.6 Signals</h2>
+<p>Signals are messages that notify a process of an event in the system. </p>
+<p>They are sent from the kernel to a process, sometimes when another process requests.</p>
+<p>There are 32 standard signals in <code>&lt;signals.h&gt;</code>, each is represented by an int between 1 and 32. These ints are represented by macros that all start with <code>SIG</code></p>
+<p>Ex: Dereferencing an invalid pointer will cause the <code>SIGSEGV</code> signal (segmentation violation) to be generated and sent to our process to cause a seg fault.</p>
+<p>The Kernel sends a signal to a destination process by updating sme state in the context of the destination process.</p>
+<p>When a signal has been delivered, the process handles it by referring to a predefined action which is the <strong>disposition</strong></p>
+<p>5 default dispositions</p>
+<ul>
+<li>ignore</li>
+<li>terminate</li>
+<li>terminate and dump core</li>
+<li>stop/pause the program</li>
+<li>resume a stopped/paused program</li>
+</ul>
+<p>A signal is <strong>pending</strong> if sent but not received. There can be at most 1 pending signal of a type at a time.</p>
+<p>Ex: If a <code>SIGINT</code> signal is pending, all other <code>SIGINT</code>s will be discarded.</p>
+<p>A process can <strong>block</strong> certain signals, blocked signals can be delivered but not received until the signal is unblocked.</p>
+<p>3 keybinded signals
+Ctrl C: Terminate
+Ctrl Z: Stop/Pause
+Ctrl \ : Terminate &amp; Dump Core</p>
+<p>On a Text User Interface(TUI), to send other signals, we can use the <code>htop</code> command to send them.</p>
+<p><strong><em>NOTE KILL DOESNT KILL A PROCESS IT JUST SENDS A SIGNAL</em></strong></p>
+<p>Choose a destination process, and hit the kill button at the bottom, or press f9 to see a list of all the signals. (See 6.14 below for example)</p>
+<p>Without using a TUI, we can use the <code>kill</code> command, (ex: <code>kill -SIGKILL 1648</code>, where <code>1648</code> is the PID and <code>SIGKILL</code> is the signal)</p>
+<p>There is also a C function called <code>kill(pid_t pid, int sig)</code>, on success, <code>0</code> is returned. On failure <code>-1</code> is returned and <code>errno</code> is set.</p>
+<p> <code>raise(int sig);</code> will send a signal to the current process.</p>
+        <img src="./images3926/10.png" alt="img id 10, if you see this msg email me with the class & chapter it was found in!">
+<p><strong>Altering Default Actions</strong></p>
+<p>We can alter the default action of every signal but <strong>SIGKILL</strong> and <strong>SIGSTOP</strong></p>
+<p>This is an example of redirecting SIGINT to the <code>ouch()</code> function, a diagram of it&#39;s flow can be seen in figure 6.15(below)</p>
+<pre><code class="lang-c"><span class="hljs-comment">/*** sig1.c ***/</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;signal.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">ouch</span><span class="hljs-params">(<span class="hljs-keyword">int</span> sig)</span> </span>{
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">"\nOuch!\n"</span>);
+    sleep(<span class="hljs-number">1</span>);
+    fflush(<span class="hljs-built_in">stdout</span>);
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Stop it!\n"</span>);
+}
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+    <span class="hljs-comment">/* declare a struct sigaction */</span>
+    <span class="hljs-keyword">struct</span> sigaction action = {<span class="hljs-number">0</span>};
+    <span class="hljs-comment">/* set the handler */</span>
+    action.sa_handler = ouch;
+    <span class="hljs-comment">/* Install the signal handler */</span>
+    sigaction(SIGINT, &amp;action, <span class="hljs-literal">NULL</span>);
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">size_t</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) {
+        <span class="hljs-built_in">printf</span>(<span class="hljs-string">"%d\n"</span>, i);
+        sleep(<span class="hljs-number">1</span>);
+    }
+
+    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+</code></pre>
+<p>First the <code>struct sigaction</code> struct is declared, it is defined as below</p>
+<pre><code class="lang-C"> <span class="hljs-keyword">struct</span> sigaction {
+ <span class="hljs-keyword">void</span> (*sa_handler)(<span class="hljs-keyword">int</span>);
+ <span class="hljs-keyword">void</span> (*sa_sigaction)(<span class="hljs-keyword">int</span>, <span class="hljs-keyword">siginfo_t</span>*, <span class="hljs-keyword">void</span>*);
+ <span class="hljs-keyword">sigset_t</span> sa_mask;
+ <span class="hljs-keyword">int</span>  sa_flags;
+ <span class="hljs-keyword">void</span>  (*sa_restorer)(<span class="hljs-keyword">void</span>);
+ };
+</code></pre>
+<p><code>sa_handler</code> is a function pointer that points to a <strong>signal handler</strong>, which is the function we want to invoke when receiving the signal we specify later.</p>
+<p>Knowing how function pointers work, the signal handler must take 1 parameter, which must be an int, and returns void. In our case <code>ouch()</code> is the signal handler.</p>
+<p>The other variables are not in this course.</p>
+<p>Once the <code>struct sigaction</code> has been setup, we can call <code>sigaction(int signum, const struct sigaction* restrict act, struct sigaction* restrict oldact);</code> to install the signal handler, which is to register it in the kernel.</p>
+<p><code>signum</code> specifies the signal we want to deal, and can be any signal but <code>SIGKILL</code> or <code>SIGSTOP</code>. If <code>act</code> isn&#39;t null, the new action for <code>signum</code> is installed from <code>act</code>. If <code>oldact</code> isn&#39;t null, the previous action is saved in <code>oldact</code>.</p>
+        <img src="./images3926/11.png" alt="img id 11, if you see this msg email me with the class & chapter it was found in!">
+<p><strong>Restoring Signals</strong></p>
+<p>The last argument of <code>sigaction()</code> is where to save the old action. We can use this to revert to the previous signal handler if we want. This example shows us how to change the <code>SIGINT</code> handler to <code>sig_handler</code>, and then revert it to old handler stored in old which will be to interrupt the program.</p>
+<pre><code class="lang-C"> <span class="hljs-comment">/*** sigrestore.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;signal.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+ <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">sig_handler</span><span class="hljs-params">(<span class="hljs-keyword">int</span> sig)</span> </span>{
+   <span class="hljs-built_in">printf</span>(<span class="hljs-string">"\nOuch!\n"</span>);
+   sleep(<span class="hljs-number">1</span>);
+   fflush(<span class="hljs-built_in">stdout</span>);
+   <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Stop it!\n"</span>);
+ }
+   <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+
+    <span class="hljs-comment">/* declare a struct sigaction */</span>
+    <span class="hljs-keyword">struct</span> sigaction <span class="hljs-keyword">new</span>;
+    <span class="hljs-keyword">struct</span> sigaction old;
+    <span class="hljs-comment">/* set the handler */</span>
+    <span class="hljs-keyword">new</span>.sa_handler = sig_handler;
+    <span class="hljs-comment">/* Install the signal handler */</span>
+    sigaction(SIGINT, &amp;<span class="hljs-keyword">new</span>, &amp;old);
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">size_t</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) {
+       <span class="hljs-built_in">printf</span>(<span class="hljs-string">"%d\n"</span>, i);
+       sleep(<span class="hljs-number">1</span>);
+    }
+    <span class="hljs-comment">/* Restore old handler */</span>
+    sigaction(SIGINT, &amp;old, <span class="hljs-literal">NULL</span>);
+    <span class="hljs-keyword">while</span>(<span class="hljs-number">1</span>);
+ <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+</code></pre>
+<p><strong>Properties of Signals</strong></p>
+<p>It isn&#39;t possible to install multiple handlers for the same signal (the most recent one will be registered), but it is possible to install one handler for multiple signals.</p>
+<p>Sending signals via the keyboard will send the signal to each process in that process group.</p>
+<p>When one signal is being handled, all other signals of that type will be discarded.</p>
+<p>We can also block signals, which is useful for if we want to track signals that arrive to our program but we don&#39;t want to use them yet.</p>
+<p>We do this by using <code>sa_mask</code> from the <code>sigaction</code> structure, which will list what signals should be blocked by the process when dealing with other signals. Once the other signals have been handled, the blocked signals will be handled after.</p>
+<pre><code class="lang-C"> <span class="hljs-comment">/*** sigblock.c ***/</span>
+ void <span class="hljs-keyword">install_handler() </span>{
+   struct sigaction setup_action<span class="hljs-comment">;</span>
+   sigset_t <span class="hljs-keyword">block_mask;
+</span>   sigemptyset (&amp;<span class="hljs-keyword">block_mask);
+</span>   <span class="hljs-comment">/* Block other terminal-generated signals while handler runs. */</span>
+   sigaddset (&amp;<span class="hljs-keyword">block_mask, </span>SIGINT)<span class="hljs-comment">;</span>
+   sigaddset (&amp;<span class="hljs-keyword">block_mask, </span>SIGQUIT)<span class="hljs-comment">;</span>
+   setup_action.sa_handler = catch_stop<span class="hljs-comment">;</span>
+   setup_action.sa_mask = <span class="hljs-keyword">block_mask;
+</span>   setup_action.sa_flags = <span class="hljs-number">0</span><span class="hljs-comment">;</span>
+   sigaction (SIGINT, &amp;setup_action, NULL)<span class="hljs-comment">;</span>
+   sigaction (SIGQUIT,&amp;setup_action, NULL)<span class="hljs-comment">;</span>
+}
+</code></pre>
+<p><code>sigemptyset(sigset_t* set)</code> will create an empty signal set.</p>
+<p><code>sigfillset(sigset_t* set)</code> will add every signal to the set.</p>
+<p><code>sigaddset(sigset_t* set, int signum)</code> will add <code>signum</code> to the set.</p>
+<p><code>sigdelset(sigset_t* set, int signum)</code> will delete <code>signum</code> from the set.</p>
+<p><code>sigismember(const sigset_t* set, int signum)</code> will check if the signal is from the set.</p>
+
     </main>
   </body>
 </html>

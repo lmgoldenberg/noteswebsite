@@ -91,7 +91,7 @@ The new evaluation rules for PROC are attached below, and PROC also includes the
    <span class="hljs-keyword">return</span> (ProcVal(id,e,en))
 </code></pre>
 <p>Now for <code>App(e1, e2)</code> evaluating an application requires us to first make sure <code>e1</code> is a closure, and if so <code>clos</code> will be bound to a triple containing parameter, body, and environment. Then evaluate <code>e2</code> and feed it to <code>apply_clos clos</code> which will finish the rest. The code is provided below</p>
-        <img src="./images4963/4.png" alt="img id 4, if you see this msg email me!">
+        <img src="./images4963/4.png" alt="img id 4, if you see this msg email me with the class & chapter it was found in!">
 <pre><code class="lang-ocaml">let rec eval_expr : expr-&gt; exp_val ea_result =
  <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">e</span></span>-&gt;
  match e <span class="hljs-keyword">with</span>

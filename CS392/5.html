@@ -6,7 +6,463 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 5</p>
-    </main>
+        <h1 id="5-file-subsystem">5 File Subsystem</h1>
+<h2 id="5-1-basic-concepts-of-files">5.1 Basic Concepts of Files</h2>
+<p>UNIX is simple because everything is a file, including directories, I/O devices, programs, network connections, and RAM.</p>
+<p><code>ls -l ~</code> will show the files in the home directory and some of the info stored about each file, it&#39;s output will look like the img below</p>
+<p>the first column is file types and permissions, it is a 10 char string where the first char is the file type, and the other 9 are the permissions.</p>
+<p>The file types that POSIX uses are listed below, these are different from the file types you may think of such as .jpg, or .png, those file types are on the application level to choose the correct software to decode/display the file, while file types listed below are at a system level. In the notes i&#39;ll use the abbreviations of a file to refer to a file type.</p>
+<p>- or r: regular file; 3<br>
+ d: directory;<br>
+ b: block special file (e.g., storage devices);<br>
+ c: character special file(e.g., graphics cards, keyboards, mouse, main memory);<br>
+ l: symbolic link;<br>
+ p: pipe (both named and unnamed); and<br>
+ s: socket</p>
+<p>all file types besides r files have an internal data structure, ex: a directory is essentially a list of files inside the directory.</p>
+<p>r files are just a sequence of bytes, and therefore the application file types such as .jpg or .png are all regular files.</p>
+<p>UNIX is a time-sharing OS, which means multiple users can be using it and it&#39;s resources at the same time, they just need their own accounts. This is convenient but not very secure or private. </p>
+<p>In UNIX there are 3 roles, user, group, and other, use the acronym <strong>ugo</strong> to remember them.
+The user is the owner/creator of a file, and upon creating the file is associated with 1 of the groups the user belongs to, and if a person is not the user or associated with the same group, they are other.</p>
+<p>There are 3 modes of access, read(<code>r</code>)/write(<code>w</code>)/execute(<code>x</code>), and 3 roles, ugo, 3*3=9 so 9 char string for permission. If a role doesn&#39;t have permission, it will be a <code>-</code> (img below)</p>
+        <img src="./images3925/1.png" alt="img id 1, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3925/2.png" alt="img id 2, if you see this msg email me with the class & chapter it was found in!">
+<p>Representing permissions as a char string is easy for the user, but in reality it is stored as 9 bytes, and when each permission char is essentially a bool which is a bit, this is overkill.</p>
+<p>In reality each role can have their permissions represented in 3 bits, (1 for each permission, see img below). </p>
+<p>3*3 = 9, so 9 bits are what is really needed.</p>
+<p>To find the octal value of a role&#39;s file permission, the formula is written in C syntax: <code>value =  r?4:0 + w?2:0 + x?1:0</code>
+Another way of viewing it is</p>
+<pre><code class="lang-C"><span class="hljs-keyword">if</span> (r == <span class="hljs-number">1</span>){
+  <span class="hljs-keyword">value</span> +=<span class="hljs-number">4</span>
+}
+<span class="hljs-keyword">if</span> (w == <span class="hljs-number">1</span>){
+  <span class="hljs-keyword">value</span> += <span class="hljs-number">2</span>
+}
+<span class="hljs-keyword">if</span> (x == <span class="hljs-number">1</span>){
+  <span class="hljs-keyword">value</span> += <span class="hljs-number">1</span>
+}
+</code></pre>
+<p>The file with the permission string <code>rw-r-----</code> will have an octal number of <code>640</code> to represent it&#39;s permissions.</p>
+<p>Sometimes there can also be special permissions besides <code>r</code>, <code>w</code>, or <code>x</code> such as <code>s</code> or <code>t</code>. They are called special permissions.</p>
+<p><code>s</code> stands for &quot;special&quot; and can appear on either the user or group&#39;s <code>x</code> permission, it&#39;s also called <code>setUID</code>. When it is on the user role, when executing the file, ALWAYS act as if the user is the one executing it. When it is on the group role, when executing the file, ALWAYS act as if the group it&#39;s affiliated with is executing it.
+An example of the <code>s</code> permission is the command that resets the user&#39;s password. <code>-rwsr-xr-x 1 root root 63K Nov 29 2022 /usr/bin/passwd</code>.</p>
+<p>If the <code>s</code> is found on a directory file, all files in the directory will have the same group ownership as the directory.</p>
+<p>A capital s, <code>S</code> means the user or group id has been set for a file, but it does not have permission to execute.</p>
+<p><code>setUID</code> only works on binary executables, not bash scripts</p>
+<p><code>t</code> stands for &quot;sticky bit&quot;, and can only be found in the <code>x</code> permission in the others role. It has no effect on files, but on a directory, files under the directory can only be deleted by their owner and the root. An example is the directory <code>/tmp/</code>&#39;s permission: <code>drwxrwxrwt 15 root root 12K Dec 27 13:13 tmp</code>.</p>
+   <img src="./images3925/3.png" alt="img id 3, if you see this msg email me with the class & chapter it was found in!">
+   <p>The OS is responsible for retrieving this info called the metadata of each file. A simple way of doing this is creating a struct which holds all of the metadata for a file. This struct is called the <strong>index node</strong> or inode.</p>
+<p>Here is all of the data the inode stores.</p>
+<ul>
+<li>The type of the file;</li>
+<li>The modeof the file (the set of read-write-execute permissions);</li>
+<li>The number of hard links to the file;</li>
+<li>The user ID of the owner of the file;</li>
+<li>The group ID to which the file belongs;</li>
+<li>The number of bytes in the file;</li>
+<li>An array of 15 disk-block addresses;</li>
+<li>The date and time the file was last accessed;</li>
+<li>The date and time the file was last modified;</li>
+<li>The date and time the inode was changed.</li>
+</ul>
+<p>Each inode also has a positive int associated with it, that is unique to that inode only within its partition. So if two inodes have the same number, they are in different partitions. <code>ls -il</code> shows the number for the inode of each file (see img below).</p>
+<p>Extra resources
+Linux source code: <a href="https://github.com/torvalds/linux/blob/master/include/linux/fs.h#L620">https://github.com/torvalds/linux/blob/master/include/linux/fs.h#L620</a>
+Linux kernel development second edition (skip to inode section): <a href="https://litux.nl/mirror/kerneldevelopment/0672327201/toc.html">https://litux.nl/mirror/kerneldevelopment/0672327201/toc.html</a></p>
+   <img src="./images3925/4.png" alt="img id 4, if you see this msg email me with the class & chapter it was found in!">
+<h2 id="5-2-retrieving-file-info">5.2 Retrieving File Info</h2>
+<p>The <code>stat</code> command shows more detailed info about a file than <code>ls -l</code> (see img below)
+A lot of <code>stat</code>&#39;s outputs aren&#39;t needed for this course such as device or IO block.</p>
+<p><code>stat</code> uses the system API to retrieve file info, we can use the interface to implement our own version of <code>stat</code> to perform file system related operations.</p>
+<p>To get all of the metadata of a file, first create a <code>struct stat</code>, which is declared in <code>&lt;sys/stat.h&gt;</code>.  It is declared in the header as</p>
+<pre><code class="lang-C"><span class="hljs-keyword">struct</span> stat {
+ <span class="hljs-keyword">dev_t</span>  st_dev; <span class="hljs-comment">/* ID of device containing file */</span>
+ <span class="hljs-keyword">ino_t</span>  st_ino;  <span class="hljs-comment">/* inode number */</span>
+ <span class="hljs-keyword">mode_t</span> st_mode;  <span class="hljs-comment">/* file type and permission bits */</span>
+
+ <span class="hljs-keyword">nlink_t</span> st_nlink; <span class="hljs-comment">/* number of hard links */</span>
+ <span class="hljs-keyword">uid_t</span> st_uid; <span class="hljs-comment">/* user ID of owner */</span>
+ <span class="hljs-keyword">gid_t</span> st_gid; <span class="hljs-comment">/* group ID of owner */</span>
+ <span class="hljs-keyword">dev_t</span> st_rdev; <span class="hljs-comment">/* device ID (if special file) */</span>
+ <span class="hljs-keyword">off_t</span> st_size; <span class="hljs-comment">/* total size, in bytes */</span>
+ <span class="hljs-keyword">blksize_t</span> st_blksize; <span class="hljs-comment">/* the "preferred" block size for FS I/O. */</span>
+
+ <span class="hljs-keyword">blkcnt_t</span> st_blocks; <span class="hljs-comment">/* number of 512B blocks allocated */</span>
+
+ <span class="hljs-keyword">time_t</span>  st_atime; <span class="hljs-comment">/* time of last access */</span>
+ <span class="hljs-keyword">time_t</span>  st_mtime; <span class="hljs-comment">/* time of last modification */</span>
+ <span class="hljs-keyword">time_t</span>  st_ctime; <span class="hljs-comment">/* time of last status change */</span>
+ };
+</code></pre>
+<p>Next use <code>stat()</code> which is declared as <code>int stat(const char* path, struct stat* buf);</code> within the same header file.
+path is the path of the file, and buf is the address of the <code>struct stat</code> we just made. 
+upon executing, if the execution is unsuccessful, <code>errno</code> will be set and it will return <code>-1</code>, if it is successful it will return <code>0</code>. This is common amonst most functions from the system API.</p>
+<p>ex:</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/stat.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+ <span class="hljs-keyword">struct</span> stat fileinfo;
+ <span class="hljs-keyword">char</span> filename[] = <span class="hljs-string">"filestat.c"</span>;
+ <span class="hljs-keyword">int</span> status = stat(filename, &amp;fileinfo);
+ <span class="hljs-keyword">if</span> (!status) {
+   perror(<span class="hljs-string">"stat"</span>);
+   <span class="hljs-built_in">exit</span>(EXIT_FAILURE);
+ }
+ <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Inode number: %llu\n"</span>, fileinfo.st_ino);
+ <span class="hljs-built_in">printf</span>(<span class="hljs-string">"User ID: %d\n"</span>, fileinfo.st_uid);
+ <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Total size: %d\n"</span>,  fileinfo.st_size);
+ <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Mode: %d\n"</span>,  fileinfo.st_mode);
+ <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+ }
+</code></pre>
+        <img src="./images3925/5.png" alt="img id 5, if you see this msg email me with the class & chapter it was found in!">
+<p>When running the code example above, printing <code>st_mode</code> as an int will produce some large number.</p>
+<p>From the declaration of <code>struct stat</code>, <code>st_mode</code> is &quot;file type and permission bits&quot;. So to get the information we need we need to know which bits to look at.
+Bits 15-12: File type
+11-9: Perm Changing
+8-6: User
+5-3: Group
+2-0: Other</p>
+<p>The perm changing bits are the <code>setuid</code> bit, <code>setgid</code> bit, and sticky bit. You don&#39;t need to worry about their functions for this course.</p>
+<p><code>st_mode</code> will include info on file types and file permissions, but it encodes info into a single variable.</p>
+<p>The way to extact info from <code>st_mode</code> is through macros. Below are the macros for each file type(1 if true, 0 if false) and permission, note the permission macros represent binary numbers and bitwise operations can be performed on them.</p>
+<p>File type macros
+ S_ISREG(st_mode) : regular file;
+ S_ISDIR(st_mode) : directory;
+ S_ISCHR(st_mode) : character special file;
+ S_ISBLK(st_mode) : block special file;
+ S_ISFIFO(st_mode) : pipe or FIFO;
+ S_ISLNK(st_mode) : symbolic link;
+ S_ISSOCK(st_mode) : socket.
+Permission macros</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IRWXU 0000700 <span class="hljs-comment">/* RWX mask for owner */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IRUSR 0000400 <span class="hljs-comment">/* R for owner */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IWUSR 0000200 <span class="hljs-comment">/* W for owner */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IXUSR 0000100 <span class="hljs-comment">/* X for owner */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IRWXG 0000070 <span class="hljs-comment">/* RWX mask for group */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IRGRP 0000040 <span class="hljs-comment">/* R for group */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IWGRP 0000020 <span class="hljs-comment">/* W for group */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IXGRP 0000010 <span class="hljs-comment">/* X for group */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IRWXO 0000007 <span class="hljs-comment">/* RWX mask for other */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IROTH 0000004 <span class="hljs-comment">/* R for other */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IWOTH 0000002 <span class="hljs-comment">/* W for other */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_IXOTH 0000001 <span class="hljs-comment">/* X for other */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_ISUID 0004000 <span class="hljs-comment">/* set user id on execution */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_ISGID 0002000 <span class="hljs-comment">/* set group id on execution */</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> S_ISVTX 0001000 <span class="hljs-comment">/* save swapped text after use */</span></span>
+</code></pre>
+<p>To get info on whether a file has a permission or not, just use <code>&amp;</code> with the <code>statstruct.st_mode</code>
+Code examples below</p>
+<pre><code class="lang-C"><span class="hljs-comment">/*** filetype.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/stat.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+   <span class="hljs-keyword">struct</span> stat fileinfo;
+   <span class="hljs-keyword">char</span> filename[] = <span class="hljs-string">"filestat.c"</span>;
+   stat(filename, &amp;fileinfo);
+   <span class="hljs-keyword">if</span> (S_ISREG(fileinfo.st_mode)) <span class="hljs-built_in">puts</span>(<span class="hljs-string">"Regular file."</span>);
+   <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (S_ISDIR(fileinfo.st_mode)) <span class="hljs-built_in">puts</span>(<span class="hljs-string">"Directory."</span>);
+   <span class="hljs-keyword">else</span> <span class="hljs-built_in">puts</span>(<span class="hljs-string">"It's not a regular file or directory."</span>);
+   <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+ }
+</code></pre>
+<pre><code class="lang-C"><span class="hljs-comment">/*** checkperm.c ***/</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/stat.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>{
+  <span class="hljs-keyword">struct</span> stat fileinfo;
+  <span class="hljs-keyword">char</span> filename[] = <span class="hljs-string">"filestat.c"</span>;
+  stat(filename, &amp;fileinfo);
+  <span class="hljs-keyword">if</span> (S_IWUSR &amp; fileinfo.st_mode) <span class="hljs-built_in">puts</span>(<span class="hljs-string">"Owner can write."</span>);
+  <span class="hljs-keyword">else</span> <span class="hljs-built_in">puts</span>(<span class="hljs-string">"Owner cannot write."</span>);
+  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+</code></pre>
+<h2 id="5-3-reading-directories">5.3 Reading Directories</h2>
+<p>in <code>struct stat</code>, the file name is not one of the variables. In reality the file name is stored in the directory as a string.</p>
+<p>Directories are folders at a basic level, but in reality is more like a table.</p>
+<p>While we visualize folders being stored as a tree-like structure, in reality it is all linear.
+Files and directories are stored on the hard drive, and file content is stored in <strong>data blocks</strong>, while directory content is stored in <strong>directory blocks</strong>. (see 5.3 and 5.4 below).</p>
+<p>Each directory in reality is a table, with two columns and n rows, where n is the size of the directory. The first column is the inode number, while the second column is the <strong>directory entry</strong> and is of type <code>struct dirent</code> and is defined in <code>&lt;dirent.h&gt;</code>.</p>
+<p>When you try to open a file, the system indexes the inode list on the hard drive using the inode number, and then read the content in the data blocks pointed at by the inode objects. </p>
+<pre><code class="lang-C"> <span class="hljs-keyword">struct</span> dirent {
+ <span class="hljs-keyword">ino_t</span>  d_ino;  <span class="hljs-comment">/* inode number */</span>
+ <span class="hljs-keyword">off_t</span> d_off;  <span class="hljs-comment">/* offset to the next dirent */</span>
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">short</span> d_reclen; <span class="hljs-comment">/* length of this record */</span>
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> d_type; <span class="hljs-comment">/* type of file;  not supported by all file system types */</span>
+ <span class="hljs-keyword">char</span> d_name[<span class="hljs-number">256</span>];  <span class="hljs-comment">/* filename, always ends with '\0' */</span>
+ };
+</code></pre>
+<p>We only care for the inode number <code>d_ino</code> and file name <code>d_name</code>.</p>
+<p>The <code>DIR</code> struct in <code>&lt;dirent.h&gt;</code> represents a directory stream. NEVER declare an object to the <code>DIR</code> struct, and instead only declare <code>DIR</code> pointers. This is because <code>DIR</code> is an incomplete type, similar to an array with no size. </p>
+<p>See img below for a comparison on how to open/close/read directories compared to files.</p>
+<p>Some extra info
+Always check if <code>opendir()</code> is null.
+Readdir will iterate through each entry in the directory, and will return <code>null</code> when it reaches the end. It is a stream.</p>
+<p>Code example below on how to use these functions properly.</p>
+        <img src="./images3925/6.png" alt="img id 6, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3925/7.png" alt="img id 7, if you see this msg email me with the class & chapter it was found in!">
+<pre><code class="lang-C"><span class="hljs-regexp">/*** ls.c ***/</span>
+ <span class="hljs-comment">#include &lt;dirent.h&gt;</span>
+ <span class="hljs-comment">#include &lt;stdio.h&gt;</span>
+ <span class="hljs-comment">#include &lt;stdlib.h&gt;</span>
+ int main (int argc, char** argv) {
+ DIR* dp;
+ struct dirent* dirp;
+ <span class="hljs-regexp">/* Exit if the pathname was not passed */</span>
+ <span class="hljs-keyword">if</span> (argc != <span class="hljs-number">2</span>) <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+ <span class="hljs-regexp">/* Open directory, and exit if DIR object returned is NULL*/</span>
+ dp = opendir(argv[<span class="hljs-number">1</span>]);
+ <span class="hljs-keyword">if</span> (dp == NULL) {
+   fprintf(stderr, <span class="hljs-string">"Cannot open %s\n"</span>, argv[<span class="hljs-number">1</span>]);
+   <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+ }
+ <span class="hljs-regexp">/* Use readdir in a loop until it returns NULL */</span>
+ <span class="hljs-keyword">while</span> ((dirp = readdir(dp)) != NULL) {
+   printf(<span class="hljs-string">"%s\n"</span>, dirp-&gt;d_name);
+ }
+ closedir(dp);
+ <span class="hljs-keyword">exit</span>(EXIT_SUCCESS);
+ }
+</code></pre>
+<p>The following functions are from <code>&lt;unistd.h&gt;</code></p>
+<p>When navigating a file system, <code>cd</code> and <code>pwd</code> are the most commonly used commands.</p>
+<p>The <code>getcwd()</code> function is defined as <code>char* getcwd(char* buf, size_t size);</code> and will return the absolute path, and modify the <code>buf</code> parameter. </p>
+<pre><code class="lang-C"><span class="hljs-selector-tag">char</span> <span class="hljs-selector-tag">temp</span><span class="hljs-selector-attr">[256]</span>;
+<span class="hljs-selector-tag">getcwd</span>(temp, <span class="hljs-number">256</span>);
+</code></pre>
+<p>This will  now put the return value of <code>getcwd()</code> which is the current working directory in <code>temp</code>. If the size of the return value is larger than the size of <code>temp</code>, <code>temp</code> becomes <code>NULL</code>.</p>
+<pre><code class="lang-C"> <span class="hljs-keyword">char</span>* temp;
+ temp = getcwd(<span class="hljs-literal">NULL</span>, <span class="hljs-number">0</span>);
+</code></pre>
+<p>Is an alternative way that will dynamically allocate <code>temp</code>, but it must be freed afterwards because it is dynamically allocated.</p>
+<p><code>int chdir(const char* path);</code> will change the directory of the executing program. In other words, it will change the directory of it&#39;s own thread and not the shells.</p>
+<p>Here is an example of both functions being used. </p>
+<pre><code class="lang-C"><span class="hljs-regexp">/*** chdir.c ***/</span>
+ <span class="hljs-comment">#include &lt;stdio.h&gt;</span>
+ <span class="hljs-comment">#include &lt;stdlib.h&gt;</span>
+ <span class="hljs-comment">#include &lt;unistd.h&gt;</span>
+ int main (int argc, char** argv) {
+
+ char* pathname = getcwd(NULL, <span class="hljs-number">0</span>);
+ <span class="hljs-keyword">if</span> (pathname == NULL) <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+ printf(<span class="hljs-string">"C program dir: %s\n"</span>, pathname);
+
+ chdir(argv[<span class="hljs-number">1</span>]);
+
+ pathname = getcwd(NULL, <span class="hljs-number">0</span>);
+ <span class="hljs-keyword">if</span> (pathname == NULL) <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+ printf(<span class="hljs-string">"C program dir changed to: %s\n"</span>, pathname);
+
+ free(pathname);
+ <span class="hljs-keyword">exit</span>(EXIT_SUCCESS);
+ }
+</code></pre>
+<p>The following functions are declared in <code>&lt;sys/stat.h&gt;</code>, they are to create and delete directories respectively.</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/stat.h&gt;</span></span>
+ <span class="hljs-comment">/* Create directories */</span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mkdir</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* pathname, <span class="hljs-keyword">mode_t</span> mode)</span></span>;
+ <span class="hljs-comment">/* Delete a directory and it has to be empty */</span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">rmdir</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* pathname)</span></span>;
+</code></pre>
+<h2 id="5-4-file-i-o">5.4 File I/O</h2>
+<p>Processes often deal with files.</p>
+<p>In order to perform I/O operations, the process must first open the file.
+The process opening the file must track it&#39;s current status (when it was opened, if it can be written to, where the user is in the file like what line and char)
+To do this the kernel creates a <code>struct file</code> object, called the <strong>file-description</strong></p>
+<pre><code class="lang-C"> <span class="hljs-keyword">struct</span> file {
+ <span class="hljs-keyword">struct</span> inode* f_inode;
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> f_flags;
+ <span class="hljs-keyword">loff_t</span> f_pos;
+ ... <span class="hljs-comment">/* for this course the rest don't matter */</span>
+ };
+</code></pre>
+<p><code>f_flags</code> are flags which indicate which I/O operations are allowed on a file. (ex: read-only, write-only)
+<code>f_pos</code> is the current writing position or <strong>file offset</strong>, <code>loff_t</code> is 64 bits.
+and a pointer to the <code>struct inode</code> of a file.</p>
+<p>Each process also has a <strong>file descriptor table</strong> which is an array of objects of <code>struct fd</code></p>
+<pre><code class="lang-C"> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">fd</span></span> {
+ <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">file</span></span>* file;
+ unsigned <span class="hljs-keyword">int</span> flags;
+ };
+</code></pre>
+<p>Each entry in the array points to an object of <code>struct file</code> which represents a file opened by the process. Each the index of each element is called the <strong>file descriptor</strong> and it is the main handle for File I/O.</p>
+<p>When a process starts executing, it opens 3 files. <code>stdin</code>, <code>stdout</code>, and <code>stderr</code>. These are entries 0, 1, and 2 in the table respectively. When a new file is opened, it creates an object <code>struct file</code>, connect it to the inode of the file, then create a <code>struct fd</code> and adds the <code>struct fd</code> to the file descriptor table. The new objects index in the table is the file descriptor for that file.</p>
+<p>When closed the <code>struct fd</code> is deleted, and that file descriptor can be used again.</p>
+<p>(See 5.6 below for ex)</p>
+        <img src="./images3925/8.png" alt="img id 8, if you see this msg email me with the class & chapter it was found in!">
+<p>The <code>open()</code> function is in the <code>&lt;fcntl.h&gt;</code> header and is declared as <code>int open(const char* pathname, int flags);</code>. It returns the file descriptor that is then assigned to the file, which will always be the lowest avaliable unsigned int. If a file can&#39;t be opened, it sets <code>errno</code> and returns <code>-1</code>.</p>
+<p>The <code>flags</code> parameter is the permission of the I/O and it must have one of these macros.
+<code>O_RDONLY</code> : read only;
+<code>O_WRONLY</code> : write only;
+<code>O_RDWR</code> : read and write.
+There are more such as <code>O_CREAT</code> for creating a file if it&#39;s path does not exist.
+Macros can be combined using the or operator <code>\</code>.
+For a list of all macros, see: <a href="https://man7.org/linux/man-pages/man2/open.2.html">https://man7.org/linux/man-pages/man2/open.2.html</a></p>
+<p>Ex: <code>int fd = open(&quot;test.log&quot;, O_WRONLY | O_CREAT | O_APPEND);</code> will open <code>test.log</code>, and if it can&#39;t it will make <code>test.log</code>, and it will append content written to the end of the file. </p>
+<p>To close a file and remove its file descriptor and it&#39;s entry in the file descriptor table, use <code>int close(int fd);</code> from the <code>&lt;unistd.h&gt;</code> header.</p>
+<p>The read/write functions are defined as</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;unistd.h&gt;</span></span>
+<span class="hljs-keyword">ssize_t</span> read (<span class="hljs-keyword">int</span> fd, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>* buf, <span class="hljs-keyword">size_t</span> count); <span class="hljs-comment">/*textbook had a blank gap where const is, probs a typo bc its const in write func*/</span>
+<span class="hljs-keyword">ssize_t</span> write(<span class="hljs-keyword">int</span> fd, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>* buf, <span class="hljs-keyword">size_t</span> count);
+</code></pre>
+<p><code>read()</code> will read up to <code>count</code> bytes, from the file descriptor <code>fd</code>, and put it into the buffer starting at <code>buf</code>
+<code>write()</code> will write up to <code>count</code> bytes starting at <code>buf</code> to the file pointed to by the file descriptor <code>fd</code>.</p>
+<p>When successful it will return the number of bytes read/write, or <code>0</code> if it reaches the end of the file.
+When it errors, it will return <code>-1</code>.</p>
+<p>r files are sequences of bytes, so the functions start operating at an offset in that sequence, shift a number of bytes to the end of the file, and return that number. (See img below)</p>
+<p>On Linux 32 or 64 bit systems, <code>read()</code> and similar syscalls will transfer at most 0x7ffff000 (2,147,479,552) bytes. Returning the # of bytes actually transferred.</p>
+        <img src="./images3925/9.png" alt="img id 9, if you see this msg email me with the class & chapter it was found in!">
+<p>Both functions are operating on bytes, when writing a string to a file this isn&#39;t a problem bc 1 char = 1 byte. It is tricker to write ints to a file though. 
+Ex:</p>
+<pre><code class="lang-C">int a = <span class="hljs-number">0</span>x5678AFFF<span class="hljs-comment">;</span>
+write(<span class="hljs-name">fd</span>, <span class="hljs-symbol">&amp;a</span>, sizeof(<span class="hljs-name">int</span>))<span class="hljs-comment">;</span>
+</code></pre>
+<p>will write the int to the file, but when reading it, it will be garbage because the int can&#39;t be presented in ascii values.
+The workaround to properly write an int to a file is seen below:</p>
+<pre><code class="lang-C"><span class="hljs-keyword">char</span>* arr[] = {<span class="hljs-string">"56"</span>, <span class="hljs-string">"78"</span>, <span class="hljs-string">"AF"</span>, <span class="hljs-string">"FF"</span>};
+ <span class="hljs-built_in">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">4</span>; i ++) {
+ <span class="hljs-built_in">write</span>(fd, arr+i, <span class="hljs-number">2</span>);
+ }
+</code></pre>
+<p>There is also no guarantee that for low level syscalls, execution will succeed and do as expected. Ex:</p>
+<pre><code class="lang-C"><span class="hljs-keyword">char</span>* <span class="hljs-keyword">str</span> = <span class="hljs-string">"Hello!"</span>;
+ write(fd, <span class="hljs-keyword">str</span>, <span class="hljs-number">6</span>);
+</code></pre>
+<p>seems correct, but is buggy since we can&#39;t garuntee that it will write all 6 characters to the file.
+Always check the return value of write to ensure it matches the expected value. Ex:</p>
+<pre><code class="lang-C"><span class="hljs-keyword">char</span>* str = <span class="hljs-string">"Hello!"</span>;
+<span class="hljs-keyword">if</span> (write(fd, str, <span class="hljs-number">6</span>) != <span class="hljs-number">6</span>) {
+  <span class="hljs-built_in">fprintf</span>(<span class="hljs-built_in">stderr</span>, <span class="hljs-string">"Not complete.\n"</span>);
+}
+</code></pre>
+<p>Also note this code below is also wrong</p>
+<pre><code class="lang-C"><span class="hljs-keyword">char</span>* <span class="hljs-keyword">str</span> = <span class="hljs-string">"Hello!"</span>;
+<span class="hljs-keyword">while</span> (write(fd, <span class="hljs-keyword">str</span>, <span class="hljs-number">6</span>) != <span class="hljs-number">6</span>);
+</code></pre>
+<p>After the first <code>write()</code> call even if less than 6 chars are written, the <code>f_pos</code> (file offset) has already been shifted.
+This may cause an output like <code>HHHellHelHellHellHelloHeHello!</code></p>
+<p>Both <code>read()</code>/<code>write()</code> change <code>f_pos</code> implicitly.
+It can also be changes using <code>lseek()</code> it is in the <code>&lt;unistd.h&gt;</code> header and declared as <code>off_t lseek(int fd, off_t offset, int whence);</code>, the letter l in the name stands for long ints, 
+<code>off_t</code> : offset in bytes, 32 or 64 bit.</p>
+<p><code>whence</code> is one of three macros
+<code>SEEK_SET</code> : relocate to the beginning of the file (offset of zero) +
+ offset. So it’s basically just offset;
+ <code>SEEK_END</code> : relocated to the end of the file (or, the size of the file) +
+ offset;
+ <code>SEEK_CUR</code> : relocate to its current location within the file + offset;</p>
+<p><code>lseek()</code> can only be used with some file types, ex: it will fail with pipe, FIFO, socket, or terminal files.</p>
+<p>see img 5.8 below for <code>lseek()</code> example</p>
+        <img src="./images3925/10.png" alt="img id 10, if you see this msg email me with the class & chapter it was found in!">
+<h2 id="5-5-buffering">5.5 Buffering</h2>
+<p>Since everything in UNIX is a file, to use I/O devices they must be connected to the file system.</p>
+<p>Some devices need immediate access without delay (RAM, keyboard, monitor, etc). These are <strong>character special devices</strong></p>
+<p>Other devices &quot;cache&quot; some data first to not have as long access times(hard drive). These are <strong>block special devices</strong></p>
+<p>See img 5.9 below for details.</p>
+<p>For block devices, getting access to a file on a hard drive is extremely slow. If we were to directly read or write, the delay would be too much. To solve this we create a &quot;buffer cache&quot; (buffer) in the main memory, which is inbetween the hard drive and file system. </p>
+<p>When we open a file, the data of the file is copied to the cache. We then operate on the data in the buffer cache instead of the hard drive.</p>
+<p>The buffer cache is not L1 or L2 cache (SRAM), but a data structure maintained by the kernel. The buffer can be considered an <strong>in-memory</strong> copy of the file.</p>
+<p>During system boot, the kernel will allocate a few buffers in a location in memory. Each buffer has a data area and a buffer header.
+Data area: stores the copies from the hard drive
+Buffer header: identifies the buffer, is defined as: (for more detail see <a href="https://github.com/torvalds/linux/blob/master/include/linux/buffer_head.h#L60">https://github.com/torvalds/linux/blob/master/include/linux/buffer_head.h#L60</a>)</p>
+<pre><code class="lang-C"> <span class="hljs-keyword">struct </span><span class="hljs-keyword">buffer_head </span>{
+   unsigned long <span class="hljs-keyword">b_state; </span><span class="hljs-comment">/* buffer state */</span>
+   <span class="hljs-keyword">struct </span><span class="hljs-keyword">buffer_head* </span><span class="hljs-keyword">b_this_page; </span><span class="hljs-comment">/* circular list of page's buffers */</span>
+   <span class="hljs-keyword">struct </span>page* <span class="hljs-keyword">b_page; </span><span class="hljs-comment">/* the page this bh is mapped to */</span>
+   sector_t <span class="hljs-keyword">b_blocknr; </span><span class="hljs-comment">/* start block number */</span>
+   char* <span class="hljs-keyword">b_data; </span><span class="hljs-comment">/* pointer to data within the page */</span>
+   <span class="hljs-keyword">struct </span><span class="hljs-keyword">block_device* </span><span class="hljs-keyword">b_bdev;
+</span>   ...
+ }<span class="hljs-comment">;</span>
+</code></pre>
+        <img src="./images3925/11.png" alt="img id 10, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3925/12.png" alt="img id 10, if you see this msg email me with the class & chapter it was found in!">
+<p>See img 5.10 above for example.</p>
+<p>When a file is opened (assume r file on hard drive), the data blocks storing the file are copied to main memory. The kernel created buffer head structs based on how many data blocks are copied. <code>b_this_page</code> is used to link them linearly to make a circular linked list. All operations are done in this buffer, on close copy the blocks back and replace the old content in the hard drive.</p>
+<p>Above was for the kernel space.
+Below is for the user space.
+To make a higher level of buffering, use the <code>FILE*</code> object, called <strong>streams</strong> from <code>&lt;stdio.h&gt;</code>.
+Two ways to get files, low level: file descriptors, high level: streams.</p>
+<p><code>stdin</code>/<code>stdout</code>/<code>stderr</code> are actually defined as below in <code>&lt;stdio.h&gt;</code> (from Apple&#39;s open source library, link doesn&#39;t work)</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> stdin (&amp;__sF[0])</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> stdout (&amp;__sF[1])</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> stderr (&amp;__sF[2])</span>
+</code></pre>
+<p>They are also defined as such in the GNU C library (<a href="https://www.gnu.org/savannah-checkouts/gnu/libc/index.html">https://www.gnu.org/savannah-checkouts/gnu/libc/index.html</a>)</p>
+<pre><code class="lang-C"> <span class="hljs-keyword">FILE</span>* stdin = (<span class="hljs-keyword">FILE</span> *) &amp;_IO_2_1_stdin_;
+ <span class="hljs-keyword">FILE</span>* stdout = (<span class="hljs-keyword">FILE</span> *) &amp;_IO_2_1_stdout_;
+ <span class="hljs-keyword">FILE</span>* stderr = (<span class="hljs-keyword">FILE</span> *) &amp;_IO_2_1_stderr_;
+</code></pre>
+<p>To open a file using <code>&lt;stdio.h&gt;</code>, we use <code>fopen()</code>, it does syscall <code>open()</code> for us, and associates the stream with the file descriptor. The file descriptor number can be found using the <code>fileno()</code> function.  ex:</p>
+<pre><code class="lang-C"><span class="hljs-comment">#include &lt;stdio.h&gt;</span>
+<span class="hljs-comment">#include &lt;stdlib.h&gt;</span>
+int main (int argc, char** argv) {
+   FILE* stream = fopen(argv[<span class="hljs-number">1</span>], <span class="hljs-string">"w"</span>);
+   <span class="hljs-keyword">if</span> (stream == NULL) <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+   int fd = fileno(stream);
+   printf(<span class="hljs-string">"fd = %d\n"</span>, fd);
+   fclose(stream);
+   <span class="hljs-keyword">exit</span>(EXIT_SUCCESS);
+}
+</code></pre>
+<p>To open an existing file descriptor, use <code>fdopen()</code>, which creates a <code>FILE</code> struct and associates it with the descriptor. ex:</p>
+<pre><code class="lang-C">int fd = open(<span class="hljs-name">argv</span>[<span class="hljs-number">1</span>], O_RDWR)<span class="hljs-comment">;</span>
+ FILE* stream = fdopen(<span class="hljs-name">fd</span>, <span class="hljs-string">"w"</span>)<span class="hljs-comment">;</span>
+</code></pre>
+<p>Another example of user space buffering is if we use <code>fprintf()</code> to write to a file.
+Our perspective is the program is the file is written to.
+In reality, it is written to the <strong>stdio buffer</strong>/<strong>stream buffer</strong>, not the real file. When we say &quot;the actual I/O&quot;, we refer to the actual file, not the buffer. </p>
+<p>The C stdio library has 3 buffering modes, fully buffered, line buffered, and unbuffered.</p>
+<p>Fully buffered is used when reading/writing, and happens in 2 situations
+Reading: buffer is empty and needs to be filled
+Writing: buffer is full and needs to be emptied
+ex:</p>
+<pre><code class="lang-C"><span class="hljs-comment">/*** fullybuffered.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sys/stat.h&gt;</span></span>
+ <span class="hljs-keyword">int</span> main (<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span>** argv) {
+   off_t <span class="hljs-built_in">size</span>;
+   off_t old_size;
+   FILE* stream;
+   <span class="hljs-keyword">struct</span> stat info;
+   stream = fopen(argv[<span class="hljs-number">1</span>], <span class="hljs-string">"w"</span>);
+   stat(argv[<span class="hljs-number">1</span>], &amp;info);
+   <span class="hljs-built_in">size</span> = info.st_size;
+   old_size = <span class="hljs-built_in">size</span>;
+   printf(<span class="hljs-string">"Current file size: %lld\n"</span>, <span class="hljs-built_in">size</span>);
+   getchar();
+   <span class="hljs-built_in">while</span> (<span class="hljs-number">1</span>) {
+     <span class="hljs-built_in">if</span> (<span class="hljs-built_in">size</span> != old_size) {
+       printf(<span class="hljs-string">"File size: %lld\n"</span>, <span class="hljs-built_in">size</span>);
+       old_size = <span class="hljs-built_in">size</span>;
+       getchar();
+     }
+     fprintf(stream, <span class="hljs-string">"0"</span>);
+     stat(argv[<span class="hljs-number">1</span>], &amp;info);
+     <span class="hljs-built_in">size</span> = info.st_size;
+   }
+ exit(EXIT_SUCCESS);
+ }
+</code></pre>
+<p>The program uses an inf loop to write chars into a file using <code>fprintf()</code>. <code>stat()</code> is used in each iteration to get the current file size, and pause on file size change (if statement).</p>
+<p>If the file is unbuffered in any place, then writing a char should change the file size.
+Note how when the file changes, it changes in multiples of 4096. This means <code>stdio</code> buffers 4096 bytes when writing, and once it is full, it&#39;ll do the actual I/O and use the syscall <code>write()</code> to push everything in the buffer to the actual file. (See img 5.11 below)</p>
+<p>The buffer itself will not be emptied once full, new data will just overwrite old data.</p>
+        <img src="./images3925/13.png" alt="img id 13, if you see this msg email me with the class & chapter it was found in!">
+<p>When the file stream buffer is full, the content will be written to the disk or hard drive. This is called <strong>flushing</strong>, and can be automatic (ex: the buffer is full, or the file is closed using <code>fclose()</code>), or manual (<code>fflush()</code> function)</p>
+<p>The <code>fflush()</code> function is defined in <code>&lt;stdio.h&gt;</code> as <code>int fflush(FILE* stream);</code>.</p>
+<p>Line buffering will flush everything from the buffer to the destination when a line is finished, ex: <code>\n</code> character. This is used with terminal devices, and <code>stdout</code> only when<code>stdout</code> is connected to the terminal. Otherwise <code>stdout</code> is fully buffered.</p>
+<p>Line buffering also has a limit, if the limit is reached without a <code>\n</code>, then everything is flushed and the final data may be shorter than expected.</p>
+<p>Unbuffered is when I/O is immediate. ex: <code>stderr</code> which is never buffered. This means when writing to <code>stderr</code> the content is put into the hard drive immediately.</p>
+<p>See example 5.2 below for an example of the impact different buffering types can have. </p>
+<p>See img 5.12 for another img of buffering.</p>
+        <img src="./images3925/14.png" alt="img id 14, if you see this msg email me with the class & chapter it was found in!">
+        <img src="./images3925/15.png" alt="img id 15, if you see this msg email me with the class & chapter it was found in!">
+
+</main>
   </body>
 </html>
