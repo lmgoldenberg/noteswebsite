@@ -6,7 +6,395 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 2</p>
-    <main>
+        <h2 id="2-1-introduction">2.1 Introduction</h2>
+<p>To include libraries in c looks like
+<code>#include &lt;stdio.h&gt;</code> where stdio.h is a commonly used library name.</p>
+<p>C works similarly to C++, where statements end with a ; and code starts in the main function and functions have an associated type that must be returned. (ex: int main() must return an int)</p>
+<p>Block comments are opened with <code>/*</code> and closed with <code>*/</code>, use <code>//</code> to make single line comments.</p>
+<p>The data types are also similar to c++, and some common ones are listed below.
+Integers: <code>int</code>
+Floats: <code>float</code>
+Double: <code>double</code>
+Characters: <code>char</code>, must be in single-quotes <code>&#39;&#39;</code></p>
+<p>The number <code>0</code> is false, all other numbers are true.</p>
+<p>Since C doesn&#39;t have a boolean type, it is best to use an integer where <code>1</code> is true and <code>0</code> is false.</p>
+<p>The <code>size_t</code> datatype is essentially an unsigned int used to iterate through arrays.</p>
+<p><code>uint_32</code> is a datatype that is a 32-bit unsigned int.</p>
+<p>Arrays work similarly to C++ aswell, arrays need their size declared when they are declared, and can have multiple dimensions, and can have values assigned when they are declared. Ex: <code>int matrix_2[3][3]</code>, <code>int matrix_3[3] = {1, 10, 100}</code>, in the second example it is possible to leave the <code>[]</code> blank and the compiler will determine the array should have a size of 3.</p>
+<p>There is no string type in C, strings are just character arrays.</p>
+<p>Two ways to declare a C string</p>
+<pre><code class="lang-C"> <span class="hljs-keyword">char</span> <span class="hljs-keyword">str</span>[] = {<span class="hljs-string">'h'</span>, <span class="hljs-string">'e'</span>, <span class="hljs-string">'l'</span>, <span class="hljs-string">'l'</span>, <span class="hljs-string">'o'</span>, <span class="hljs-number">0</span>};
+ <span class="hljs-keyword">char</span> <span class="hljs-keyword">str</span>[] = <span class="hljs-string">"Hello"</span>
+</code></pre>
+<p>No need to declare length, and all must have a null terminator, it is automatically added with the second implementation, but required for the first</p>
+<p>Some useful functions include <code>strlen()</code> which calculates length not including null terminator, and <code>strcmp()</code> which compares two strings and returns 0 if equal, and something else if not.</p>
+<p>So far we&#39;ve discussed primitive data types.
+Composite data types are structs made of primitive data types.</p>
+<p>Imagine a rectangle with length and width values that are floats, in this example the rectangle is a composite data type.</p>
+<p>C structs do not need constructors or deconstructors. Below is this rectangle struct implemented and how to assign values or initialize it.</p>
+<p>This would be implemented as below</p>
+<pre><code class="lang-C">struct Rectangle {
+ <span class="hljs-built_in">float</span> <span class="hljs-built_in">width</span>;
+ <span class="hljs-built_in">float</span> <span class="hljs-built_in">length</span>;
+ };
+
+ struct Rectangle box1 = {.<span class="hljs-built_in">width</span> = <span class="hljs-number">10</span>, .<span class="hljs-built_in">length</span> = <span class="hljs-number">20</span>};
+ struct Rectangle box2;
+//<span class="hljs-built_in">first</span> <span class="hljs-number">4</span> are assigning <span class="hljs-built_in">values</span> directly, <span class="hljs-built_in">last</span> <span class="hljs-built_in">is</span> using a pointer to a struct to assign <span class="hljs-built_in">values</span>
+ box1.<span class="hljs-built_in">width</span> = <span class="hljs-number">10</span>;
+ box1.<span class="hljs-built_in">length</span> = <span class="hljs-number">20</span>;
+ box2.<span class="hljs-built_in">width</span> = <span class="hljs-number">13.5</span>;
+ box2.<span class="hljs-built_in">length</span> = <span class="hljs-number">33</span>;
+pointerbox1-&gt;<span class="hljs-built_in">width</span> = <span class="hljs-number">10</span>;
+</code></pre>
+<p>By adding the keyword <code>typedef</code> before <code>struct</code> when making the struct, you can skip adding the keyword <code>struct</code> when initializing it.</p>
+<p>The members  or values of a struct are stored linearly based on the order they are declared</p>
+<p>In the example above, <code>.width</code> was declared before <code>.length</code>, so <code>.width</code> occupies the first 4 bytes with offset 0, and <code>.length</code> occupies the next 4 with offset 4. (see 2.1)</p>
+<p>the macro <code>offsetof(struct structname, structmember)</code> where structname and structmember are variables, and struct will remain struct, will return the offset of the member in that struct.</p>
+<p>If a struct has different types, ex: a struct with char a and int b, the struct will also have 8 bytes despite chars taking 1 byte.</p>
+<p>This is because of <strong>alignment</strong>, which is a rule that a different type of data in a struct should always start at an address that is a multiple of 4. (see 2.3 and 2.2) Since most data types are multiples of 4, this normally isn&#39;t a worry unless you are dealing with chars (1 byte) or shorts (2 bytes)</p>
+<p>This is important when working with storage efficiency with structs. Which struct is smaller, and by how many bytes?</p>
+<p><code>C
+ struct S1 { char a; int b; char c; };
+ struct S2 { char a; char c; int b; };</code> S2 saves 4 bytes</p>
+        <img src="./images3922/1.png" alt="">
+        <img src="./images3922/2.png" alt="">
+        <img src="./images3922/3.png" alt="">
+<p>Using bit-fields also makes structures more compact</p>
+<p>The smallest data type, <code>char</code> can represent data in the range of [0, 2^8-1]. Though it is common to only need variables that represent 1 or 2 bits, and using <code>char</code> for them will waste space.</p>
+<p>Given the example</p>
+<pre><code class="lang-C"><span class="hljs-keyword">struct</span> S1 {
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> ge;
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> te;
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> season;
+ };
+</code></pre>
+<p>ge = whether the student passed all general electives
+te = whether the student passed all technical electives
+season = season student was born</p>
+<p>all of this data can be represented in a total of 4 bits, but 3 chars will use 24</p>
+<p>by using bit fields to label how many bits is needed for each variable we can make this 6x as efficient <code>: n</code> where n is the number of bits.</p>
+<pre><code class="lang-C"><span class="hljs-keyword">struct</span> S1 {
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> ge : <span class="hljs-number">1</span>;
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> te : <span class="hljs-number">1</span>;
+ <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> season : <span class="hljs-number">2</span>;
+ };
+</code></pre>
+<p>The downside is you can&#39;t get the address of each variable since the 4 bits form a single byte, and bytes are uniquely addressed.</p>
+<p>Structs in C each member has their own space in memory, but there is another composite data type called <strong>union</strong> where all all members (called alternatives) share the same memory space.</p>
+<p>Unions are defined the same way as structs but with the keyword <code>union</code> instead of <code>struct</code>.</p>
+<p>The size of a union is determined by its largest alternative, so a union with a char (1 byte) and an int (4 bytes) will be 4 bytes. See figure 2.4 below for picture. </p>
+<p>Unlike a struct where each member is initialized separately, if you initialize one alternative of a union, the other alternatives will be initialized too.</p>
+<p>Unions are very effective for viewing the same data in different types. Below is an example of a union that is initialized with an integer, but prints it&#39;s binary form as a string(char array)</p>
+<pre><code class="lang-C">void view_bytes(int num) {
+
+ <span class="hljs-class"><span class="hljs-keyword">union</span> <span class="hljs-title">data</span> {</span>
+ char bytes[<span class="hljs-number">4</span>];
+ int integer;
+ };
+
+ <span class="hljs-class"><span class="hljs-keyword">union</span> <span class="hljs-title">data</span> <span class="hljs-title">d</span>;</span>
+ d.integer = num;
+
+ <span class="hljs-keyword">for</span> (int i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">4</span>; i ++) {
+ printf(<span class="hljs-string">"0x%x "</span>, d.bytes[i]);
+ }
+ printf(<span class="hljs-string">"\n"</span>);
+ <span class="hljs-keyword">return</span>;
+}
+</code></pre>
+        <img src="./images3922/4.png" alt="">
+  <p>In C some compilers need the function header before the function. The function header is the same as when you make the function, but instead of having <code>{</code> and then code, it just has a semicolon.</p>
+<p>ex:<code>double get_volume(double length, double width, double height);</code>
+the parameter names are optional so <code>double get_volume(double, double, double)</code> is also valid</p>
+<p>Besides that it&#39;s just writing a function in C++, I hope you know how to do that, ngl i&#39;m not gonna write how to write a function to a bunch of 4th sem cs majors lol
+*do make sure the type of the function matches the return value</p>
+<p>argc and argv (cs385 stuff)
+argc = count of arguments
+argv = array of arguments all arguments, first index is the command itself, in C each entry is a char array regardless of the input</p>
+<p>the C standard library <code>&lt;stdlib.h&gt;</code> has 2 macros for exiting, <code>EXIT_SUCCESS</code> and <code>EXIT_FAILURE</code>, these are used to determine if the program termination was successful or not. </p>
+<p>To see the exit code of a previously executed program run <code>echo $?</code> after running the program.</p>
+<p>Using a return statement such as <code>return 0</code> in a C <code>main()</code> function will return to the C startup-routine, which will call <code>exit()</code>, if we call <code>exit()</code> or pass a code in such as <code>exit(0)</code>  it will call up the exit handler, and then perform I/O cleanup that will cleanup the buffer, and then call <code>_exit()</code> which is a system call that never returns and will exit the process entirely. Figure 2.6 below shows an image of the exit process in C</p>
+        <img src="./images3922/5.png" alt="">
+<h2 id="2-2-c-standard-i-o-library">2.2 C Standard I/O Library</h2>
+<p>The C standard i/o libary is <code>&lt;stdio.h&gt;</code> and includes all the functions needed to interact with files, the terminal, strings, and anything else to process inputs and outputs.
+See: <a href="https://www.ibm.com/docs/en/zos/3.1.0?topic=files-stdioh-standard-input-output">https://www.ibm.com/docs/en/zos/3.1.0?topic=files-stdioh-standard-input-output</a> for documentation</p>
+<p>Files in C are a struct pointer <code>FILE*</code>, which is usually called stream. Standard input/output is just a stream. Since every UNIX/Linux system uses <code>stdin</code>, <code>stdout</code>, and <code>stderr</code>, they are also used in this course for C and are declared below.</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-keyword">extern</span> FILE* <span class="hljs-built_in">stdin</span>;
+ <span class="hljs-keyword">extern</span> FILE* <span class="hljs-built_in">stdout</span>;
+ <span class="hljs-keyword">extern</span> FILE* <span class="hljs-built_in">stderr</span>;
+</code></pre>
+<p>To read and write to a file stream, the following functions are used.</p>
+<pre><code class="lang-C"> <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">fprintf</span> <span class="hljs-params">( FILE* stream, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* format, ... )</span></span>;
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">fscanf</span> <span class="hljs-params">( FILE* stream, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* format, ... )</span></span>;
+</code></pre>
+<p>From now on print all error messages to <code>stderr</code> like this example.</p>
+<pre><code class="lang-C"> <span class="hljs-keyword">if</span> (argc != <span class="hljs-number">2</span>) {
+ fprintf(stderr, <span class="hljs-string">"Usage: %s &lt;file&gt;\n"</span>, argv[<span class="hljs-number">0</span>]);
+ <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+ }
+</code></pre>
+<p><code>fprintf()</code> and <code>fscanf()</code> work very similarly to <code>printf()</code> and <code>scanf()</code> respectively, but the latter default to <code>stdout</code> while the former let you choose which stream to send your message to.</p>
+<p><code>FILE*</code> can also be used to open text files to read/write, <code>fopen()</code> and <code>fclose()</code> allow you to open and close a file, the first argument for <code>fopen()</code> is the path to the file as a string, and the second is the mode, (use <code>w+</code> for read/write with override)</p>
+<p>Once open <code>fopen()</code> will return a <code>FILE*</code> pointer that can be used in <code>fprintf()</code> and <code>fscanf()</code>. Make sure to check if <code>fopen()</code> returns <code>NULL</code> so you don&#39;t creash the program.</p>
+<p>Use <code>getline()</code> to get the content from a line. To retrieve the contents of a file, use <code>getline()</code> in a while loop.</p>
+<p>The example below shows how to properly use all of the functions taught,</p>
+<pre><code class="lang-C"> <span class="hljs-regexp">/*** readline.c ***/</span>
+ <span class="hljs-comment">#include &lt;stdio.h&gt;</span>
+ <span class="hljs-comment">#include &lt;stdlib.h&gt;</span>
+ int main(int argc, char* argv[]) {
+   FILE* stream;
+   char* line = NULL;
+   size_t len = <span class="hljs-number">0</span>;
+   ssize_t nread = <span class="hljs-number">0</span>;
+
+   <span class="hljs-keyword">if</span> (argc != <span class="hljs-number">2</span>) {
+     fprintf(stderr, <span class="hljs-string">"Usage: %s &lt;file&gt;\n"</span>, argv[<span class="hljs-number">0</span>]);
+     <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+   }
+   <span class="hljs-keyword">if</span> ((stream = fopen(argv[<span class="hljs-number">1</span>], <span class="hljs-string">"r"</span>)) == NULL) {
+     fprintf(stderr, <span class="hljs-string">"Error in opening file!\n"</span>);
+     <span class="hljs-keyword">exit</span>(EXIT_FAILURE);
+   }
+   <span class="hljs-keyword">while</span> ((nread = getline(&amp;line, &amp;len, stream)) !=-<span class="hljs-number">1</span>) {
+     printf(<span class="hljs-string">"Retrieved line of length %zd:\n"</span>, nread);
+   }
+   free(line);
+   fclose(stream);
+   <span class="hljs-keyword">exit</span>(EXIT_SUCCESS);
+ }
+</code></pre>
+<h1 id="2-3-error-handling">2.3 Error Handling</h1>
+<p>In the GNU C library, there is a global variable <code>errno</code> in <code>&lt;errno.h&gt;</code>, When a library function goes wrong and returns <code>-1</code>, it also sets a value to <code>errno</code>. If it doesn&#39;t go wrong, then <code>errno</code> does not change. The values of <code>errno</code> are macros and listed at this link: <a href="https://www.gnu.org/software/libc/manual/html_node/Error-Codes.html">https://www.gnu.org/software/libc/manual/html_node/Error-Codes.html</a></p>
+<p>File I/O erros are super common so there is already a macro defined. When <code>fopen()</code> returns a NULL pointer (it failed to open a file), it also sets <code>errno</code> to <code>ENOENT</code>. Since we have an error message already produced, instead of writing your own, use <code>perror()</code> to print out the error message that already exists. Still make sure to <code>exit(EXIT_FAILURE)</code> afterwards though.</p>
+<h1 id="2-4-pointers">2.4 Pointers</h1>
+<p>Every variable in memory has an address.
+To get said address use <code>&amp;</code> before the variable name.
+The address is different each time the program is ran.</p>
+<p>The value of an array&#39;s name is the address of the first element.</p>
+<p>Pointers are just data types that store addresses.</p>
+<p>To declare a pointer add <code>*</code> before the type declaration of the pointer. The pointer&#39;s type must match the type of the variable the address you are trying to store points to.</p>
+<p>To dereference a pointer add <code>*</code> before the name of the pointer when it is used in code. This will give the variable the pointer is pointing to.</p>
+<p>Another way to call the elements of an array besides <code>array[i]</code> is to use the fact that <code>array</code> is just the address of <code>array[0]</code> and, then adding <code>i</code> as an offset since from 382 arrays are consecutive data with an offset. After adding <code>i</code>, dereference the result. Ex: <code>*(array + i)</code> to get the <code>i</code>th element of an array.</p>
+<p>The order of operations in C can be found here: <a href="https://en.cppreference.com/w/c/language/operator_precedence">https://en.cppreference.com/w/c/language/operator_precedence</a></p>
+<p>C is a pass-by-value language. So to update variables passed to a function in C, you must use pointers.</p>
+<p> To properly change the value of a variable in a function using another function, pass the address of a variable instead of the variable itself. Then use dereferencing to get the actual variable.</p>
+<p>Pointers can also have pointers, to change the value of a pointer passed into a function, you must use the address of the pointer variable NOT THE ADDRESS STORED IN THE POINTER to a function.</p>
+<p>Null pointers are simply any type of pointer that points to an address <code>NULL</code> or <code>0</code>.</p>
+<p>Void pointers (<code>void*</code>) are pointers that can&#39;t be dereferenced. This is because to dereference a pointer you need to know the size of the variable it is pointing to. This is just not possible with void pointers. The benefit of void pointers is their flexibility since they can point to any type. When using <code>void*</code> for arrays, pass the element size and the array length.</p>
+<p>Once you determine the type of the <code>void*</code>, you can cast it to that type and dereference it.
+Ex: <code>double* double_ptr = (double*)void_ptr</code> where <code>void_ptr</code> is of type <code>void*</code> which we know represents a pointer to a double. This will allow you to then dereference <code>double_ptr</code> to get the variable <code>void_ptr</code> pointed to.</p>
+<p>In virtual memory, functions and variables are stored similarly. Local variables are stored in the stack, while dynamically allocated variables are stored in the heap. There is also another area to store code, which is where our code, once translated to machine language, is stored. Since it is stored, it has an address.</p>
+<p>The address of a function is the address of the function&#39;s first machine instruction, and are associated to  the declaration of the function they are pointing to.</p>
+<p>Ex: to make a pointer to point to the following function
+<code>int addition (int x, int y) { return x + y; }</code>
+Then define it&#39;s type as <code>int (*func_ptr)(int, int);</code> where <code>func_ptr</code> is the pointers name. This pointer can point to any function that uses two <code>int</code>s as parameters and returns an <code>int</code>.</p>
+<p>You can then set pointer equal to the function&#39;s address by simply doing <code>func_ptr = addition;</code>.</p>
+<p>To use a function pointer as a function, you can either dereference the name and then pass parameters like <code>int result = (*func_ptr)(4, 5);</code>, or just use the name as the function name like <code>int result = func_ptr(4, 5);</code></p>
+<p>An example of why function pointers is important is the quick sort function in the C standard library.</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-keyword">void</span> qsort(<span class="hljs-keyword">void</span>* base, size_t nmemb, size_t <span class="hljs-built_in">size</span>, <span class="hljs-keyword">int</span> (*compar)(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>*, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span>*));
+</code></pre>
+<p>In sorting algorithms, an array is needed, but there is no way to tell what the type of the array is. Therefore, the length of the array <code>nmemb</code>, and size of each element <code>size</code> are required parameters.</p>
+<p>Since we also have no idea what the type of the array is, we have no way to know how the user would like the array sorted or by what criteria. This is where the user can input a function to tell <code>qsort()</code> how to sort the array it is given. An example of sorting a struct <code>Employee</code> by their salary in increasing order is listed below.</p>
+<pre><code class="lang-C"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Employee</span></span> {
+ <span class="hljs-keyword">char</span>* name;
+ <span class="hljs-keyword">int</span> age;
+ <span class="hljs-keyword">int</span> salary;
+};
+<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Employee</span></span> workers[<span class="hljs-number">20</span>];
+<span class="hljs-keyword">int</span> salary_up(<span class="hljs-keyword">const</span> void* a, <span class="hljs-keyword">const</span> void* b) {
+ <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Employee</span></span>* pa = (<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Employee</span></span>*)a;
+ <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Employee</span></span>* pb = (<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Employee</span></span>*)b;
+ <span class="hljs-keyword">if</span> (pa-&gt;salary &lt; pb-&gt;salary) <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;
+ <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (pa-&gt;salary &gt; pb-&gt;salary) <span class="hljs-keyword">return</span>-<span class="hljs-number">1</span>;
+ <span class="hljs-keyword">else</span> <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+ }
+ qsort(workers, <span class="hljs-number">20</span>, <span class="hljs-keyword">sizeof</span>(<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Employee</span></span>), &amp;salary_up);
+</code></pre>
+<h1 id="2-5-c-compilation-process">2.5 C Compilation Process</h1>
+<p><code>gcc</code> stands for GNU Compiler Collection, has all the software needed to turn C code into an executable.</p>
+<p>The software is: preprocessor, compiler, assembler, and linker.</p>
+<p>Typing <code>gcc</code> with no flags, runs the entire compilation process and makes the executable. Adding flags allows us to get intermediate parts of the process. See table 2.1</p>
+<p><strong>Preprocessing</strong></p>
+<p><code>#include</code> starts with a <code>#</code>, and are called <strong>directives</strong>. Before turning C code into assembly, the first step is to run preprocessing.</p>
+<p>To view the output of preprocessing in a file.
+<code>gcc macro.c-E &gt; macro.i</code></p>
+<p> <code>.h</code> or header files contain function declarations, all standard C header files are located at <code>/usr/include</code>, and the preprocessor will automatically go there to search for it.</p>
+<p>If a header file is created by us, it must have <code>&quot;&quot;</code> around the path of the file instead of <code>&lt;&gt;</code> around just the file name, so the preprocessor knows where to look.</p>
+<p>ex: <code>#include &quot;utils.h&quot;</code> (same directory, only time just name),<code>#include &quot;../utils.h&quot;</code>, file in the parent directory.</p>
+<p>To make macros in C, simply follow this form
+<code>#define macroname value</code>, where <code>macroname</code> is the macro&#39;s name, and value can be anything. Upon preprocessing, any appearance of macroname will simply be replaced with by value. BY ANYTHING ACTUALLY ANYTHING (even lines of code).</p>
+<p>Use macros only when necessary since they do make it difficult to debug and read if used too freely.</p>
+<p>Macros can have parameters passed to them like functions, ex: </p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span></span>
+ CALC_AREA(x,y) x * y
+ <span class="hljs-keyword">int</span> main () {
+ <span class="hljs-keyword">double</span> <span class="hljs-keyword">length</span> = <span class="hljs-number">10</span><span class="hljs-comment">;</span>
+ <span class="hljs-keyword">double</span> <span class="hljs-keyword">width</span> = <span class="hljs-number">20</span><span class="hljs-comment">;</span>
+ <span class="hljs-keyword">double</span> area = CALC_AREA(<span class="hljs-keyword">length</span>, <span class="hljs-keyword">width</span>)<span class="hljs-comment">;</span>
+ <span class="hljs-keyword">return</span> <span class="hljs-number">0</span><span class="hljs-comment">;</span>
+ }
+</code></pre>
+<p>multi line macros that represent larger chunks of code are also possible, ex:</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> COMPARE(x,y)\
+   <span class="hljs-meta-keyword">if</span> (x &gt; y) printf(<span class="hljs-string">"Larger!\n"</span>); \
+   <span class="hljs-meta-keyword">else</span> printf(<span class="hljs-string">"Not larger!\n"</span>);</span>
+</code></pre>
+<p><code>\</code> indicated that the macro is not over at that line.
+Since <code>#define</code> is read line by line, make sure each macro is recognized as 1 line.</p>
+        <img src="./images3922/6.png" alt="">
+        <p>Macros can also be used to control which parts of the code to compile. and have this structure, this is called <strong>conditional macros</strong></p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">ifdef</span> <span class="hljs-meta-string">&lt;symbol1&gt;</span></span>
+   <span class="hljs-comment">/* Stuff that'll be compiled
+   if symbol1 is defined */</span>
+ <span class="hljs-meta">#elseif <span class="hljs-meta-string">&lt;symbol2&gt;</span></span>
+   <span class="hljs-comment">/* Stuff that'll be compiled
+   if symbol2 is defined */</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">else</span></span>
+   <span class="hljs-comment">/*All Others */</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">endif</span></span>
+</code></pre>
+<pre><code class="lang-C"><span class="hljs-comment">/*** macro.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> FINISHED <span class="hljs-comment">//change FINISHED to DRAFT and the ifdef becomes true</span></span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span> <span class="hljs-params">(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span>** argv)</span> </span>{
+   <span class="hljs-meta">#<span class="hljs-meta-keyword">ifdef</span> DRAFT</span>
+     <span class="hljs-built_in">printf</span>(<span class="hljs-string">"I'm a draft!\n"</span>);
+   <span class="hljs-meta">#<span class="hljs-meta-keyword">else</span></span>
+     <span class="hljs-built_in">printf</span>(<span class="hljs-string">"I'm finished!\n"</span>);
+   <span class="hljs-meta">#<span class="hljs-meta-keyword">endif</span></span>
+     <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+</code></pre>
+<p>Here is an example of using conditional macros to debug a program</p>
+<pre><code class="lang-C"><span class="hljs-comment">/*** macro2.c ***/</span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+ <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> DEBUG</span>
+
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">largest</span><span class="hljs-params">(<span class="hljs-keyword">int</span> arr[], <span class="hljs-keyword">int</span> n)</span> </span>{
+   <span class="hljs-keyword">int</span> i;
+   <span class="hljs-keyword">int</span> max = arr[<span class="hljs-number">0</span>];
+   <span class="hljs-keyword">for</span> (i = <span class="hljs-number">1</span>; i &lt; n; i ++) {
+     <span class="hljs-meta">#<span class="hljs-meta-keyword">ifdef</span> DEBUG</span>
+       <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Checking number [%d]: %d\n"</span>, i, arr[i]);
+       <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Current max: %d\n"</span>, max);
+     <span class="hljs-meta">#<span class="hljs-meta-keyword">endif</span></span>
+       <span class="hljs-keyword">if</span> (arr[i] &gt; max) max = arr[i];
+     <span class="hljs-meta">#<span class="hljs-meta-keyword">ifdef</span> DEBUG</span>
+       <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Current max: %d\n\n"</span>, max);
+     <span class="hljs-meta">#<span class="hljs-meta-keyword">endif</span></span>
+   }
+ <span class="hljs-keyword">return</span> max;
+ }
+
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span> <span class="hljs-params">(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span>** argv)</span> </span>{
+   <span class="hljs-keyword">int</span> arr[] = {<span class="hljs-number">10</span>, <span class="hljs-number">324</span>, <span class="hljs-number">45</span>, <span class="hljs-number">90</span>, <span class="hljs-number">9</span>};
+   <span class="hljs-keyword">int</span> n = <span class="hljs-number">5</span>;
+   <span class="hljs-built_in">printf</span>(<span class="hljs-string">"Largest in given array is %d\n"</span>, largest(arr, n));
+   <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+ }
+</code></pre>
+<p><strong>The only job of the preprocessor is to expand macros or preprocessor directives. It does not check for syntax outside of lines that start with <code>#</code></strong>
+If code has errors outside of <code>#</code>, it will still generate preprocessed code for the compiler.</p>
+<p><strong>Compiling</strong></p>
+<p>The output of the preprocessor will be passed to the compiler, comments have been removed and macros have been expanded, it is just C language with no preprocessor directives.</p>
+<p>The compiler will translate the C into assembly, so the compiler will check for any syntax errors in the code itself. All syntax errors come from the compiler.</p>
+<p>Note this is purely syntax errors, not any other errors, so the following code will pass the compiler.</p>
+<pre><code class="lang-C"><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> N 14</span>
+ <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mian</span> (<span class="hljs-params"></span>) </span>{
+   a = a + <span class="hljs-function">N
+   <span class="hljs-title">getsome</span>(<span class="hljs-params"></span>)</span>;
+ }
+</code></pre>
+<p>This is because not all C code needs a <code>main()</code> to run, and the <code>getsome()</code> function was called correctly, and that is all it cares for, it does not care that the function is undefined since all the compiler needs to do is translate it to assembly, and the line <code>getsome();</code> can simply be translated as <code>BL getsome</code> in assembly.</p>
+<p>At most we would get a warning from the compiler that would look at follows.</p>
+<pre><code>demo.c: <span class="hljs-keyword">In</span> <span class="hljs-function"><span class="hljs-keyword">function</span></span> ‘mian’:
+demo.c:<span class="hljs-number">4</span>:<span class="hljs-number">9</span>: warning: <span class="hljs-keyword">implicit</span> declaration of <span class="hljs-function"><span class="hljs-keyword">function</span></span> ‘getsome’ [-Wimplicit-<span class="hljs-function"><span class="hljs-keyword">function</span></span>-declaration]
+ <span class="hljs-number">4</span> | getsome();
+   | ^~~~~~~
+</code></pre><p>The compiler will produce object files called <strong>relocatable object files</strong>(ROF) that are merged by the linker into one executable.</p>
+<p><strong>Linking</strong></p>
+<p>The linker will combine multiple ROFs generated by the compiler into one executable. All functions and symbols should have been defined, and there needs to be a <code>main()</code> function.</p>
+<p>A symbol is a function or a variable.</p>
+<p>Symbol resolution is to ensure that the symbols in our program are defined.</p>
+<p>Remember the compiler from above processed <code>getsome()</code> as <code>BL getsome</code> despite there not being any defintion, now the linker will try to find the definition of <code>getsome()</code>.</p>
+<p>Since an executable has only 1 text segment and 1 data segment, but since we can be compiling multiple RFOs, each have their own data and text segments which all (assume to) start at address <code>0</code>. The goal of relocation is to merge multiple text/data segments in 1 text/data segment, and recalculate branching or data addresses as needed in the executable.</p>
+<p><strong>Using Makefile</strong></p>
+<p>When a project is larger, it&#39;s compilation gets more complex. <strong>Make</strong>(remember 385?) has been a powerful tool to automate compilation. The script executed by <code>Make</code> is called a <strong>makefile</strong>.
+A makefile is like a bash script but with many differences.</p>
+<p>When running a bash script, the commands are run in a linear order with some control flow
+A makefile can also run commands, but the flow of the commands depend on the dependencies of the source code.</p>
+<p>A makefile also has a different structure and different syntax primarily consisting of rules.</p>
+<p>Here is the structure of a rule in a makefile.</p>
+<pre><code class="lang-make"><span class="hljs-symbol">target:</span> dependencies
+ <span class="hljs-params">&lt;tab&gt;</span>system_command_1
+ <span class="hljs-params">&lt;tab&gt;</span>system_command_2
+ <span class="hljs-params">&lt;tab&gt;</span>system_command_3
+ ...
+</code></pre>
+<p>Here is an example of a makefile </p>
+<pre><code class="lang-make"><span class="hljs-attribute">all</span>: dep1 dep2 dep3
+ <span class="hljs-variable">@echo</span> <span class="hljs-string">"* Linking all objects..."</span>
+ <span class="hljs-variable">@echo</span> <span class="hljs-string">"Done!"</span>
+<span class="hljs-attribute">dep1</span>: dep1.<span class="hljs-number">1</span> dep1.<span class="hljs-number">2</span>
+  <span class="hljs-variable">@echo</span> <span class="hljs-string">"dep1..."</span>
+<span class="hljs-attribute">dep2</span>:
+  <span class="hljs-variable">@echo</span> <span class="hljs-string">"I'm dep2"</span>
+<span class="hljs-attribute">dep3</span>:
+  <span class="hljs-variable">@echo</span> <span class="hljs-string">"I'm dep 3"</span>
+dep1.<span class="hljs-number">1</span>:
+  <span class="hljs-variable">@echo</span> <span class="hljs-string">"dep1.1"</span>
+dep1.<span class="hljs-number">2</span>:
+ <span class="hljs-variable">@echo</span> <span class="hljs-string">"dep1.2"</span>
+<span class="hljs-attribute">clean</span>:
+ <span class="hljs-variable">@echo</span> <span class="hljs-string">"Cleaning up..."</span>
+</code></pre>
+<p><strong>Note the commands must be indented by a tab, not spaces.</strong></p>
+<p>Naming that example makefile <code>Makefile</code>, and running <code>make</code> will run the file with the following output.</p>
+<pre><code>dep1<span class="hljs-number">.1</span>
+dep1<span class="hljs-number">.2</span>
+dep1<span class="hljs-params">...</span>
+I<span class="hljs-string">'m dep2
+I'</span>m dep <span class="hljs-number">3</span>
+* Linking <span class="hljs-literal">all</span> objects<span class="hljs-params">...</span>
+Done!
+</code></pre><p>As you can see, the <code>echo</code> commands are not being ran line by line like in a bash script. It is actually more like a tree structure (see picture below)
+Makefiles actually execute from bottom to top rather than top to bottom, for example, to execute <code>dep1</code>, both <code>dep1.1</code> and <code>dep1.2</code> must be executed first.</p>
+<p>Though rules themselves are executed linearly, and if a command is prefixed with an <code>@</code>, it will be executed as usual. If there is no <code>@</code> present, the command itself will also print. There is also a target called clean which removes some of the by-products of executing the makefile, it can be ran by using <code>make clean</code>.</p>
+        <img src="./images3922/7.png" alt="">
+<p>As an example, lets say we have a C project for matrix operations and it&#39;s structure is shown below in 2.9.</p>
+<p>To write the makefile for this project, the goal is to make <code>a.out</code> using <code>transpose.o</code>, <code>linear.o</code>, <code>scalar.o</code>, and <code>external.so</code>. Note those <code>.o</code> files come must also be made themselves too, we are only given the <code>.c</code> files at the bottom of the tree structure. </p>
+<p>Therefore the first rule will require <code>transpose</code>, <code>linear</code>, and <code>scalar</code> to be ran, and then it will run <code>gcc</code> on those object files with <code>external.so</code> to generate <code>a.out</code></p>
+<pre><code class="lang-make"><span class="hljs-attribute">all</span>: transpose linear scalar
+  <span class="hljs-variable">@gcc</span> transpose.o linear.o scalar.o external.so -o a.out
+</code></pre>
+<p>Though we are not given the <code>.o</code> files to run <code>all:</code>, we are given the <code>.c</code> files so we must generate the <code>.o</code> files. The commands to generate these <code>.o</code> files are as follows.</p>
+<pre><code class="lang-make"><span class="hljs-attribute">transpose</span>: transpose.c
+  <span class="hljs-variable">@gcc</span> transpose.c -o transpose.o
+<span class="hljs-attribute">linear</span>: linear.c cancel.c
+  <span class="hljs-variable">@gcc</span> linear.c cancel.c -o linear.o
+<span class="hljs-attribute">scalar</span>: arith.c scalar.c
+  <span class="hljs-variable">@gcc</span> arith.c scalar.c -o scalar.o
+</code></pre>
+<p>Since we won&#39;t need the <code>.o</code> files once we are done compiling the final executable, we can remove them in a clean target as seen below.</p>
+<pre><code class="lang-make"><span class="hljs-symbol">clean:</span>
+ rm-f *.o
+</code></pre>
+<p>Variables can also be used in makefiles, and it is useful when you need to change the compiler or the compiler operations. Below is an example</p>
+<pre><code class="lang-make">CC=gcc
+CFLAGS=-c -Wall
+all: transpose linear scalar 
+  $(CC) transpose<span class="hljs-selector-class">.o</span> linear<span class="hljs-selector-class">.o</span> scalar<span class="hljs-selector-class">.o</span> external<span class="hljs-selector-class">.so-o</span> <span class="hljs-selector-tag">a</span><span class="hljs-selector-class">.out</span>
+transpose: transpose<span class="hljs-selector-class">.c</span>
+  $(CC) $(CFLAGS) $^ -o transpose<span class="hljs-selector-class">.o</span>
+linear: linear<span class="hljs-selector-class">.c</span> cancel.c
+</code></pre>
+<p>Note <code>$^</code> is a macro which refers to all files listed in the dependencies of the target.</p>
+<p>You can also write loops in targets, add suffixes, special macros, and more, but for the purposes of this course, this stuff is not included.</p>
+        <img src="./images3922/8.png" alt="">
+    </main>
   </body>
 </html>

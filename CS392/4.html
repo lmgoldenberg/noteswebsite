@@ -6,7 +6,56 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 4</p>
-    <main>
+        <h1 id="4-system-programming-concepts">4 System Programming Concepts</h1>
+<p>Brief overview of the kernel, 4.1 (see below) shows a picture of the different parts of the system.</p>
+<p>Chapter 5 will discuss the file subsystem and buffering mechanisms.
+Chapter 6 will discuss the process control subsystem, out of the 3 major tasks of it, we will only focus on inter-process communication in Chapter 7, the other 2 are not in this course.</p>
+<h1 id="4-1-the-kernel">4.1 The Kernel</h1>
+<p>All programs in our system use hardware resources (CPU, physical memory, devices, etc). Allocating and scheduling these resources is key, and is managed by the <strong>kernel</strong>. The kernel also refers to the UNIX operating system, and is essentially the OS itself.</p>
+<p>The kernel carries out many important tasks called essential services. These are essentially features of the kernel offered to us and are listed below.</p>
+<ul>
+<li>Process scheduling and management;</li>
+<li>signaling and inter-process communication;</li>
+<li>Physical and virtual memory management;<ul>
+<li>Provision of a file system;</li>
+<li>Creation and termination of processes;</li>
+<li>Device management;</li>
+<li>Networking services;</li>
+<li>Provision of a system call application programming interface (API).</li>
+</ul>
+</li>
+</ul>
+        <img src="./images3924/1.png" alt="">
+<h1 id="4-2-kernel-and-user-space">4.2 Kernel and User Space</h1>
+<p>(See 4.2 below for visualization)
+When UNIX boots, the kernel is loaded into the <strong>kernel space</strong> in physical memory and stays there until the machine is shut down.</p>
+<p>User processes (programs we write and execute) do not access kernel space, they stay in the <strong>user space</strong></p>
+<p>Almost all programs not the kernel are in user space. We say these programs are running in <strong>user mode</strong>.</p>
+<p>Sometimes a program needs access to an I/O device which are managed by the kernel. Ex: <code>printf()</code> in C is printing a string to the monitor. Since our code can&#39;t directly access the monitor, we need to request the kernel to print the string for us.</p>
+<p>This request will move the program into kernel space, which means it is running in <strong>kernel mode</strong>, then print the string, and finally move back into user space, which means it is again running in user mode.</p>
+        <img src="./images3924/2.png" alt="">
+<h1 id="4-3-system-calls">4.3 System Calls</h1>
+<p>The requests mentioned in section 4.2 (above) are done through a group of functions called <strong>system calls</strong> (Syscalls).</p>
+<p>Syscalls are special because when they are called, the kernel is running, which causes the program to change from user mode to kernel mode, which changes the execution mode of the processor.</p>
+<p>Syscalls are invoked by the <code>syscall()</code> function, where the syscall&#39;s specific number and arguments are passed. </p>
+<p>A useful trick is if a syscall&#39;s name is <code>fun</code>, it&#39;s number will be defined either a called <code>__NR_fun</code> or <code>SYS_fun</code>. These macros are imported by <code>&lt;sys/syscall.h&gt;</code>.</p>
+<p>The list of all syscalls is: <a href="https://man7.org/linux/man-pages/man2/syscalls.2.html">https://man7.org/linux/man-pages/man2/syscalls.2.html</a></p>
+<p>Syscalls can also be invoked by the C wrapper functions, and this is what is commonly used.</p>
+<p>An example is, the line <code>printf(&quot;Hello World!\n);&quot;</code> actually calls the C wrapper function <code>write(1, &quot;Hello World!\n&quot;, 13);</code>,  which actually calls the syscall <code>syscall(SYS_write, 1, &quot;Hello World!\n&quot;, 13);</code>. See 4.3 (below) for image.</p>
+        <img src="./images3924/3.png" alt="">
+<h1 id="4-4-a-really-brief-timeline-on-linux">4.4 A Really Brief Timeline on Linux</h1>
+<p>ngl im copy pasting this straight out of the book there is nothing to simplify</p>
+<p> <strong>1969</strong>: Ken Thompson and Dennis Ritchie wrote the first version of UNIX at AT&amp;T Bell Labs (iykyk);<br>
+ <strong>1973</strong>: Thompson and Ritchie published the first paper on UNIX(see Resources on Canvas);<br>
+ <strong>1974</strong>: UC-Berkeley (UCB) acquired the system and started adding more features. Their version of UNIX is usually called Berkeley Software Distribution (BSD); AT&amp;T started licensing UNIX to universities as well;<br>
+ <strong>1974–1979</strong>: UCB and AT&amp;T were developing their own versions on UNIX independently;<br>
+ <strong>1979</strong>: AT&amp;T started trademarked UNIX, selling UNIX commercially, and made it expensive to own it. BSD remains free to acquire;<br>
+ <strong>1985</strong>: Steve Jobs was fired from Apple, and founded a company called NeXT, Inc. To provide a system for his products, he acquired a copy of 4.3BSD UNIX;<br>
+ <strong>1991</strong>: Linux was developed by Linus Torvalds. Linux itself contains only the kernel, and it behaves like UNIX. It doesn’t, however, contain any code of UNIX;<br>
+ <strong>1993</strong>: AT&amp;T divested itself of UNIX, selling it to Novell, which one year later sold the trademark to an industry consortium known as X/Open;<br>
+ <strong>1996</strong>: Apple bought NeXT, and therefore acquired Steve Jobs’ operating system (based on BSD UNIX). This has become the early version of macOS.</p><br>
+<p>There are a lot of different different distributions of UNIX and similar systems, so compatability became an issue. To solve this the IEEE Computer Society made a group of standards called Portable Operating System Interface (POSIX).</p>
+<p>POSIX is a trademark of IEEE, so it is very expensive to make an OS POSIX-certified, so only a very few are. Apple&#39;s macOS and most Linux distributions are &quot;mostly POSIX compliant&quot;.</p>
+    </main>
   </body>
 </html>
