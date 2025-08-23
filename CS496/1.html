@@ -6,7 +6,35 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 1</p>
+        <h2 id="1-1-judgements">1.1 Judgements</h2>
+<p>A <strong>judgement</strong> is a statement about 1 or more objects, ex: n nat
+states object n is a natural number
+n is the <strong>subject</strong> of the statement</p>
+<p>judgements either holds (true) or doesnt (false), this is determined by the <strong>derivation rules</strong> of a judgement.</p>
+<p>the derivation rules of a judgement n nat are found below in 1.1</p>
+<p>judgements are structured with a <strong>hypothesis</strong> on the top, and a <strong>conclusion</strong> on the bottom, like an if/then statement, if there is no hypothesis it is called an <strong>axiom</strong>, if it has at least 1 hypothesis it is a <strong>proper</strong> derivation rule. There will always be 1 conclusion regardless of whether it is an axiom or proper. The tidbit on the right of the judgement is just a name to refer it to.</p>
+<p>Axioms are always true, while propers require the hypothesis to be true for the conclusion to be true.</p>
+<p>A <strong>derivation</strong> is a tree whose nodes are instances of derivation rules and whose leaves are instances of axioms.</p>
+<p>Attached is an example of the judgement of <code>succ(succ(zero))</code> is found below, try to figure it out before looking at it.</p>
+<p>Another judgement example is <code>e expr</code>, which is defined with the judgement <code>n int</code></p>
+<p><code>e expr</code> in figure 1.2 describes a set of well-formed arithmetic expressions, expressions that is missing a key component of the well formed expression, or has an extra component, or unbalanced parenthesis, are examples of not well-formed expressions (basically anything thats a typical syntax error)</p>
+<p>An example of a well-formed expression is ((4/0) -0) expr according to the above derivation rules.</p>
+<p>Judgements that are used to define well-formed expressions are called <strong>grammars</strong>.</p>
+        <img src="./images4961/1.png" alt="">
+        <img src="./images4961/2.png" alt="">
+        <img src="./images4961/3.png" alt="">
+<h2 id="1-2-inductive-sets">1.2 Inductive Sets</h2>
+<p>A set of derivation rules for 1 or more judgements is an <strong>inductive definition</strong></p>
+<p>An inductive definition specifies an <strong>inductive set</strong>, each element in the set is a judgement, mostly derivable ones.</p>
+<p>An example of an inductive set follows the structure</p>
+<p>For every axiom J, J is a part of A</p>
+<p>For every rule, the rule is applied to J up to n times and becomes a part of A.</p>
+<p>For example, an inductive set A for figure 1.1 (above) would be {zero nat, succ(zero) nat, succ(succ(zero)) nat, ...}</p>
+<p><strong>Iterated Inductive Definitions</strong> are sets of <strong>iterated inductive sets</strong>, for example, the inductive definition 1.3(below) consists of rules deriving judgements of the form l listNat for lists of natural numbers, the judgements from 1.1 (above) can be used with 1.3</p>
+<p>1.2(above) is an example of an iterated inductive set.</p>
+<p>**Simultaneous inductive definitions are those in which 2 or more judgements are defined at once. The simplest example is defining <code>n even</code> and <code>n odd</code> 1.4(below)</p>
+        <img src="./images4961/4.png" alt="">
+        <img src="./images4961/5.png" alt="">
     </main>
   </body>
 </html>

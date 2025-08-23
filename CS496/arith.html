@@ -6,7 +6,110 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 2 - arith</p>
+        <p>ARITH is a language with simple aritthmetic expressions.</p>
+<h1 id="2-1-syntax">2.1 Syntax</h1>
+<p>is usually presented in the form of a grammar and called the <strong>concrete syntax.</strong>, it contains useless details, some examples of concrete syntax are <code>4/2</code>, <code>4 div 2</code>, and <code>div 4 2</code>. An example of concrete syntax but in the form of judgements instead of grammar is 1.2 (previous chapter).</p>
+<p>Each line is called a <strong>production</strong>,  Expressions in angle brackets <code>&lt;&gt;</code> are called <strong>non-terminals</strong>. The example below only has two nonterminals <code>&lt;Expression&gt;</code> and <code>&lt;Number&gt;</code>.</p>
+<p> ⟨Number⟩ ::= ... | (-2) | (-1) | 0 | 1 | 2 | ...<br>
+ ⟨Expression⟩ ::= ⟨Number⟩<br>
+ ⟨Expression⟩ ::= ⟨Expression⟩-⟨Expression⟩<br>
+ ⟨Expression⟩ ::= ⟨Expression⟩/⟨Expression⟩<br>
+ ⟨Expression⟩ ::= (⟨Expression⟩)</p>
+<p>Out of all of the nonterminals, one singles out and is the <strong>start nonterminal</strong>. In our example that will be <code>&lt;Expression&gt;</code>. The symbols on the right of <code>::=</code> that aren&#39;t nonterminals are called <strong>terminals</strong>.</p>
+<p>Our example will have the following set of terminals <code>{...,(-2),(-1),0,1,2,...} U {-,/,(,)}</code></p>
+<p>Some nonterminals such as <code>&lt;Number&gt;</code> are not specified as productions, but rather specifided  outside of the grammar and are <strong>tokens</strong>. Tokens are specifided by regular expressions and the sequence of symbols are <strong>lexemes</strong>. In the example we used, the token representation of <code>&lt;Number&gt;</code> would just be <code>123</code> or <code>-123</code>.</p>
+<p>Examples of syntactically correct expressions are <code>3-4</code>, <code>((4/0)-4)</code>, <code>3-4-1</code>, <code>(-4)/2</code>. All of them can be justified through a derivation of the terminals from the nonterminal <code>&lt;Expression&gt;</code></p>
+<p>An example is the derivation of <code>3-4</code></p>
+<p><code>&lt;Expression&gt;</code> =&gt; <code>&lt;Expression&gt;-&lt;Expression&gt;</code><br>
+                                 =&gt; <code>&lt;Number&gt;-&lt;Expression&gt;</code><br>
+                                 =&gt; 3-<code>&lt;Number&gt;</code><br>
+                                 =&gt; 3-4<br></p>
+<p>Notice how each step undoes a single production of the grammar until it is all terminals.
+Examples of incorrect expressions: <code>3--4</code>, <code>div 2</code>, <code>3-()</code></p>
+<p>Given a string of terminals, a parser will produce an abstract syntax tree (AST) for s if it is syntactically correct in ARITH, and it will fail if not.</p>
+<p>The AST has a type prog, which is a type of expression in the form <code>AProg(cs,e)</code> where <code>cs</code> is a list of class declarations, and <code>e</code> is of type <code>expr</code></p>
+<p>For now <code>cs</code> will be empty, and <code>e</code> is the focus.</p>
+<p>See <code>parser_plaf/lib/ast.ml</code> for a better understanding.</p>
+<p>The <code>parse</code> function parses a string, and if it obeys the concrete syntax, it will produce an associated syntax tree, and if not it will produce an error.</p>
+<p>An example is <code>parse &quot;1+2*3&quot;</code>, which will produce the abstract syntax tree</p>
+<p><code>AProg([], Add (Int 1 Mul (Int 2, Int 3)))</code></p>
+<p><code>parse</code> has type <code>string-&gt;prog</code></p>
+<h1 id="2-2-interpreter">2.2 Interpreter</h1>
+<p>An interpreter is a process that when given an expression, evaluated it and produces the result.</p>
+<p>Interpreters are explained in 2 steps within these notes, specification and then interpretation</p>
+<p>Specification specifies the rules and implementation implements the rules.</p>
+<p><strong>Specification</strong></p>
+<p>Quick refresher: <em>Z</em> is the set of all integers.</p>
+<p>Evaluations of programs in ARITH either result in integers <em>Z</em> or a special element <em>error</em>. This is shown by the way that ARITH programs only produce integers or result in errors. 2.1 (below) includes all of the evaluation rules for ARITH</p>
+<p>In 2.1, m, n, and p are all integers</p>
+<p>The notation for this would be <code>R := *Z* U {error}</code>
+where <code>:=</code> represents definitional equality, so <code>R</code> is &quot;defined to be&quot; the set of <em>Z</em> integers or the special symbol <em>error</em>. 
+Try to find the derivation of <code>Sub(Div(Int 4, Int2), Int 1) ⇓ 1</code> and <code>Sub(Div(Int 8, Int 0), Int 1) ⇓ error</code>.  The former&#39;s answer can be found below.</p>
+<p>Note: not all evaluation judgements are derivable, an example of a non-derivable one is <code>Sub(Int 3, Int 1) ⇓ 1</code> because the judgement does not hold.</p>
+        <img src="./images4962/1.png" alt="">
+        <img src="./images4962/2.png" alt="">
+<p><strong>Implementation</strong></p>
+<p>In order to use evaluation rules as a guideline for implementation, both components and evaluation judgements must be expressed in OCaml. Components are already expressed through the variable type <code>expr</code>, but evaluation judgements will be modeled with the following type</p>
+<p><code>type &#39;a result = Ok of &#39;a | Error of string</code>, this means that type <code>int result</code> will either be an integer, or an error.</p>
+<p>Next is a preliminary implementation of the ARITH interpeter. The evaluator function is <code>eval_expr</code> and has type <code>exp -&gt; int result</code>.</p>
+<p>The code for <code>eval_expr</code> is below</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> rec eval_expr : expr -&gt; int result = 
+  <span class="hljs-keyword">fun</span> e-&gt;
+   <span class="hljs-keyword">match</span> e <span class="hljs-built_in">with</span>
+   | <span class="hljs-type">Int</span>(n)-&gt; Ok n
+   | <span class="hljs-type">Sub</span>(e1,e2)-&gt;
+   (<span class="hljs-keyword">match</span> eval_expr e1 <span class="hljs-built_in">with</span>
+     | <span class="hljs-type">Error</span> s-&gt; Error s
+     | <span class="hljs-type">Ok</span> m-&gt; (<span class="hljs-keyword">match</span> eval_expr e2 <span class="hljs-built_in">with</span>
+               | <span class="hljs-type">Error</span> s-&gt; Error s
+               | <span class="hljs-type">Ok</span> n-&gt; Ok (m-n)))
+   | <span class="hljs-type">Div</span>(e1,e2)-&gt;
+   (<span class="hljs-keyword">match</span> eval_expr e1 <span class="hljs-built_in">with</span>
+    | <span class="hljs-type">Error</span> s-&gt; Error s
+    | <span class="hljs-type">Ok</span> m-&gt; (<span class="hljs-keyword">match</span> eval_expr e2 <span class="hljs-built_in">with</span>
+              | <span class="hljs-type">Error</span> s-&gt; Error s
+              | <span class="hljs-type">Ok</span> n-&gt; <span class="hljs-keyword">if</span> n==<span class="hljs-number">0</span>
+                <span class="hljs-keyword">then</span> Error <span class="hljs-string">"Division by zero"</span>
+                <span class="hljs-keyword">else</span> Ok (m-n)))
+</code></pre>
+<p>note: OCaml evaluates arguments right to left</p>
+<p>Although needed, there is nothing useful in computing with an error so it is best handled by helpers behind the scene. <code>return</code>, <code>error</code>, and <code>(&gt;&gt;=) (aka bind)</code> are the 3 helpers. These helpers are called an <strong>Error Monad</strong> and handle behind the scenes work and help better structure code. The code for each helper is listed below.</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> <span class="hljs-keyword">return</span> : 'a -&gt; 'a result = 
+  <span class="hljs-keyword">fun</span> v-&gt; Ok v
+<span class="hljs-keyword">let</span> error : string-&gt; ’a result =
+ <span class="hljs-keyword">fun</span> s-&gt; Error s
+<span class="hljs-keyword">let</span> (&gt;&gt;=) : ’a result-&gt; (’a-&gt; ’b result)-&gt; ’b result =
+ <span class="hljs-keyword">fun</span> c f-&gt;
+ <span class="hljs-keyword">match</span> c <span class="hljs-built_in">with</span>
+ | <span class="hljs-type">Error</span> s-&gt; Error s
+ | <span class="hljs-type">Ok</span> v-&gt; f v
+</code></pre>
+<p>The <code>return</code> function just returns the argument with an <code>Ok</code> constructor and is used for non-error results.</p>
+<p>The <code>error</code> function when given a string produces an error by just prefixing it with the <code>Error</code> constructor.</p>
+<p>The infix operator <code>(&gt;&gt;=)</code> called bind follows the form <code>c &gt;&gt;= f</code> and follows this behavior</p>
+<ol>
+<li>evaluates <code>c</code> to a result, if <code>c</code> is an error, propagate it and end</li>
+<li>if <code>c</code> returns <code>Ok v</code>, then pass <code>v</code> onto <code>f</code> by evaluating <code>f v</code></li>
+</ol>
+<p>Rewriting our interpreter using these helper functions will result in</p>
+<pre><code class="lang-ocaml">let rec eval_expr : expr -&gt; int result = 
+  <span class="hljs-function"><span class="hljs-keyword">fun</span> e -&gt;</span>
+  match e with
+  | <span class="hljs-built_in">Int</span>(n) -&gt; <span class="hljs-keyword">return</span> n
+  | Sub(e1,e2) -&gt;
+    eval_expr e1 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> n1 -&gt;</span>
+    eval_expr e2 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> n2 -&gt;</span>
+    <span class="hljs-keyword">return</span> (n1-n2)
+  | Div(e1,e2)-&gt;
+    eval_expr e1 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> n1-&gt;</span>
+    eval_expr e2 &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> n2-&gt;</span>
+    <span class="hljs-keyword">if</span> n2==<span class="hljs-number">0</span>
+    then error <span class="hljs-string">"Division by zero"</span>
+    <span class="hljs-keyword">else</span> <span class="hljs-keyword">return</span> (n1/n2)
+</code></pre>
+<p>In the example <code>Sub(e1, e2)</code>, if <code>eval_expr e1</code> produces an error, <code>(&gt;&gt;=)</code> will ignore the second argument and just return the error saving computational resources.</p>
+<p>See 2.3 in the book for exercises on chapter 2.</p>
+
     </main>
   </body>
 </html>

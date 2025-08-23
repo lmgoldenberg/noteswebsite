@@ -6,7 +6,140 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 3 - proc</p>
+        <h1 id="3-2-proc">3.2 Proc</h1>
+<p>PROC adds first-class functions to LET.</p>
+<h2 id="concrete-syntax">Concrete Syntax</h2>
+<p>Here is some examples of expressions in PROC</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> <span class="hljs-attr">f</span> = proc (x) { x-<span class="hljs-number">11</span> }
+<span class="hljs-keyword">in</span> (f (f <span class="hljs-number">77</span>))
+
+(proc (f) { (f (f <span class="hljs-number">77</span>)) } proc (x) { x-<span class="hljs-number">11</span> })
+
+<span class="hljs-keyword">let</span> <span class="hljs-attr">x</span> = <span class="hljs-number">2</span>
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> <span class="hljs-attr">f</span> = proc (z) { z-x }
+<span class="hljs-keyword">in</span> (f <span class="hljs-number">1</span>)
+
+<span class="hljs-keyword">let</span> <span class="hljs-attr">x</span> = <span class="hljs-number">2</span>
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> <span class="hljs-attr">f</span> = proc (z) { z-x }
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> <span class="hljs-attr">x</span> = <span class="hljs-number">1</span>
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> <span class="hljs-attr">g</span> = proc (z) { z-x }
+<span class="hljs-keyword">in</span> (f <span class="hljs-number">1</span>)- (g <span class="hljs-number">1</span>)
+</code></pre>
+<p>The concrete syntax of PROC adds two new productions to the grammar of LET, they are bolded.</p>
+<p> ⟨Expression⟩ ::= ⟨Number⟩<br>
+ ⟨Expression⟩ ::= ⟨Identifier⟩<br>
+ ⟨Expression⟩ ::= ⟨Expression⟩⟨BOp⟩⟨Expression⟩<br>
+ ⟨Expression⟩ ::= zero?(⟨Expression⟩)<br>
+ ⟨Expression⟩ ::= if⟨Expression⟩then⟨Expression⟩else⟨Expression⟩<br>
+ ⟨Expression⟩ ::= let⟨Identifier⟩=⟨Expression⟩in⟨Expression⟩<br>
+ ⟨Expression⟩ ::= (⟨Expression⟩)<br>
+ <strong>⟨Expression⟩ ::= proc(⟨Identifier⟩){⟨Expression⟩}</strong><br>
+ <strong>⟨Expression⟩ ::= (⟨Expression⟩⟨Expression⟩)</strong><br>
+ ⟨BOp⟩ ::= +|-|*|/</p>
+<h2 id="abstract-syntax">Abstract Syntax</h2>
+<p><code>Proc</code> and <code>App</code> are added to <code>expr</code>, making all the types it can handle be</p>
+<p>type expr = <br>
+  | Var of string<br>
+  | Int of int<br>
+  | Add of expr*expr<br>
+  | Sub of expr*expr<br>
+  | Mul of expr*expr<br>
+  | Div of expr*expr<br>
+  | Let of string*expr*expr<br>
+  | IsZero of expr<br>
+  | ITE of expr*expr*expr<br>
+  | Proc of string*texpr option*expr<br>
+  | App of expr*expr</p>
+<p>Note <code>Proc</code> has 3 arguments, the first is the formal parameter, the second is the an optional type annotation(for later), and the third is the body of the function.</p>
+<p>For now <code>Proc</code> will just follow the form <code>Proc(id,None,e)</code></p>
+<p>Parsing the expression <code>let f=proc(x) x+1 in (f 3)</code> will produce</p>
+<pre><code class="lang-ocaml">AProg([],
+      Let (<span class="hljs-string">"f"</span>, Proc (<span class="hljs-string">"x"</span>, None, Add (<span class="hljs-name">Var</span> <span class="hljs-string">"x"</span>, Int <span class="hljs-number">1</span>)), App (<span class="hljs-name">Var</span> <span class="hljs-string">"f"</span>, Int <span class="hljs-number">3</span>)))
+</code></pre>
+<h2 id="interpreter">Interpreter</h2>
+<h3 id="specification">Specification</h3>
+<p>Evaluation judgements for PROC are the same as LET except now the value resulting from non-error computations can also be a <strong>closure</strong>(<em>CL</em>), which is a triple consisint of an identifier, expression, and environment. All 3 sets must be defined mutually recursively since they depend on eachother.</p>
+<p><em>EV</em> := <em>Z</em> U <em>B</em> U <em>CL</em>
+<em>CL</em> :=  {(<em>id</em>,<em>e</em>,<em>ρ</em>) | <em>e</em> ∈ <em>EXP</em>,<em>id</em> ∈ <em>ID</em>,<em>ρ</em> ∈ <em>ENV</em>}
+<em>ENV</em> := ID ⇀ <em>EV</em></p>
+<p>The evaluation judgement for PROC is
+<em>e</em>,<em>p</em>⇓<em>r</em>
+The new evaluation rules for PROC are attached below, and PROC also includes the evaluation rules found in LET.</p>
+<h3 id="implementation">Implementation</h3>
+<p>To extend the LET interpreter for PROC, model closures and extend eval_expr.</p>
+<p>Modeling closures is just adding the <code>| ProcVal...</code> line to </p>
+<pre><code class="lang-ocaml"> <span class="hljs-keyword">type</span> exp_val =
+ | <span class="hljs-type">NumVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">int</span>
+ | <span class="hljs-type">BoolVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">bool</span>
+ | <span class="hljs-type">ProcVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">string</span>*<span class="hljs-built_in">expr</span>*env
+<span class="hljs-keyword">end</span>
+ env =
+ | <span class="hljs-type">EmptyEnv</span>
+ | <span class="hljs-type">ExtendEnv</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">string</span>*exp_val*env
+</code></pre>
+<p>For <code>eval_expr</code> add two new cases, <code>Proc(id, e)</code> and <code>App(e1, e2)</code></p>
+<p><code>Proc(id, e)</code> should produce a closure with both <code>id</code> and <code>e</code>, and include the current environment <code>en</code>. However <code>en</code> is not in scope, and is handled in the background. To solve this we add a function to find the environment</p>
+<pre><code class="lang-ocaml">let lookup_env : env ea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">env</span></span>-&gt; Ok env
+</code></pre>
+<p>This new function will allow us to complete <code>Proc(id,e)</code></p>
+<pre><code class="lang-ocaml">let rec eval_expr : expr-&gt; exp_val ea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">e</span></span>-&gt;
+ match e <span class="hljs-keyword">with</span>
+ | Proc(id,e)-&gt;
+   lookup_env &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">en</span></span>-&gt;
+   <span class="hljs-keyword">return</span> (ProcVal(id,e,en))
+</code></pre>
+<p>Now for <code>App(e1, e2)</code> evaluating an application requires us to first make sure <code>e1</code> is a closure, and if so <code>clos</code> will be bound to a triple containing parameter, body, and environment. Then evaluate <code>e2</code> and feed it to <code>apply_clos clos</code> which will finish the rest. The code is provided below</p>
+        <img src="./images4963/4.png" alt="">
+<pre><code class="lang-ocaml">let rec eval_expr : expr-&gt; exp_val ea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">e</span></span>-&gt;
+ match e <span class="hljs-keyword">with</span>
+ | App(e1,e2)-&gt;
+   eval_expr e1 &gt;&gt;=
+   clos_of_procVal &gt;&gt;= <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">clos</span></span>-&gt;
+   eval_expr e2 &gt;&gt;=
+   apply_clos clos
+</code></pre>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> clos_of_procVal : exp_val-&gt;(string*expr*env) ea_result =
+ <span class="hljs-keyword">fun</span> ev-&gt;
+ <span class="hljs-keyword">match</span> ev <span class="hljs-built_in">with</span>
+ | <span class="hljs-type">ProcVal</span>(id,body,en)-&gt; <span class="hljs-keyword">return</span> (id,body,en)
+ | <span class="hljs-type">_</span>-&gt; error <span class="hljs-string">"Expected a closure!"</span>
+</code></pre>
+<pre><code class="lang-ocaml">let rec apply_clos : string*expr*env-&gt; exp_val-&gt; exp_val ea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> (<span class="hljs-title">id</span></span>,e,en) ev-&gt;
+ <span class="hljs-keyword">return</span> en &gt;&gt;+
+ extend_env id ev &gt;&gt;+
+ eval_expr e
+</code></pre>
+<p><code>apply_clos</code> sets <code>en</code> to become the new current environment, and extends it to the assignment <code>id</code> to <code>ev</code>, then continues the evaluation of the closure body.</p>
+<h3 id="dynamic-scoping">Dynamic Scoping</h3>
+<p>Given the code for <code>apply_clos</code></p>
+<pre><code>let rec apply_clos : string*expr*env-&gt; exp_val-&gt; exp_val ea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> (<span class="hljs-title">id</span></span>,e,en) ev-&gt;
+ <span class="hljs-keyword">return</span> en &gt;&gt;+
+ (extend_env id ev &gt;&gt;+
+ eval_expr e)
+</code></pre><p>If we removed <code>return en &gt;&gt;+</code>, we implement dynamic scoping</p>
+<p>In this case the environment  extended by <code>extend_env id a</code> is the current environment, and not the one saved.</p>
+<p>Here are some examples of executing programs in this variant of PROC</p>
+<pre><code class="lang-ocaml"><span class="hljs-comment"># interp "</span>
+<span class="hljs-keyword">let</span> <span class="hljs-attr">f</span> = proc (x) { <span class="hljs-keyword">if</span> zero?(x) <span class="hljs-keyword">then</span> <span class="hljs-number">1</span> <span class="hljs-keyword">else</span> x*(f (x-<span class="hljs-number">1</span>)) }
+<span class="hljs-keyword">in</span> (f <span class="hljs-number">6</span>) <span class="hljs-string">";;
+- : Ds.exp_val Ds.result = Ds.Ok (Ds.NumVal 720)
+
+# interp "</span>
+<span class="hljs-keyword">let</span> <span class="hljs-attr">f</span> = proc (x) { x+a }
+<span class="hljs-keyword">in</span> <span class="hljs-keyword">let</span> <span class="hljs-attr">a=2</span>
+<span class="hljs-keyword">in</span> (f <span class="hljs-number">2</span>)<span class="hljs-string">";;
+- : Ds.exp_val Ds.result = Ds.Ok (Ds.NumVal 4)
+
+# interp "</span>
+<span class="hljs-keyword">let</span> <span class="hljs-attr">f=</span> <span class="hljs-keyword">let</span> <span class="hljs-attr">a=2</span> <span class="hljs-keyword">in</span> proc(x) { x+a}
+<span class="hljs-keyword">in</span> (f <span class="hljs-number">2</span>) <span class="hljs-string">";;- : Ds.exp_val Ds.result = Ds.Error "</span>a not found!<span class="hljs-string">"</span>
+</code></pre>
+
     </main>
   </body>
 </html>

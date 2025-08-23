@@ -6,7 +6,136 @@
   </head>
   <body>
     <main>
-        <p>This is chapter 3 - rec</p>
+        <h1 id="3-3-rec">3.3 Rec</h1>
+<p>Our language <del>unfortunately</del> fortunately doesn&#39;t support recursion. However this is Stevens and everything must be implemented recursively, so let&#39;s change that.</p>
+<p>The following attempt at defining the factorial of 5 fails because <code>f</code> is not visible in the body of the <code>proc</code></p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> <span class="hljs-attr">f</span> = 
+ proc (x) {
+  <span class="hljs-keyword">if</span> zero?(x)
+  <span class="hljs-keyword">then</span> <span class="hljs-number">1</span>
+  <span class="hljs-keyword">else</span> x*(f (x-<span class="hljs-number">1</span>)) }
+<span class="hljs-keyword">in</span> (f <span class="hljs-number">5</span>)
+</code></pre>
+<p>In the environment, the closure <code>f</code> does not include a reference to <code>f</code> itself. REC changes this by allowing us to define recursive functions. The factorial of 5 in rec would be as follows</p>
+<pre><code class="lang-ocaml">letrec <span class="hljs-built-in">fact</span>(x) =
+   <span class="hljs-keyword">if</span> zero?(x)
+   <span class="hljs-keyword">then</span> <span class="hljs-number">1</span>
+   <span class="hljs-keyword">else</span> x * (<span class="hljs-built-in">fact</span> (x<span class="hljs-number">-1</span>))
+in (<span class="hljs-built-in">fact</span> <span class="hljs-number">5</span>)
+</code></pre>
+<p>REC also supports mutually recursive function declarations such as</p>
+<pre><code class="lang-ocaml"><span class="hljs-built_in">let</span> <span class="hljs-literal">true</span> = zero?(<span class="hljs-number">0</span>)
+<span class="hljs-keyword">in</span> <span class="hljs-built_in">let</span> <span class="hljs-literal">false</span> = zero?(<span class="hljs-number">1</span>)
+<span class="hljs-keyword">in</span> letrec
+     <span class="hljs-built_in">even</span>(x) = <span class="hljs-keyword">if</span> zero?(x) <span class="hljs-keyword">then</span> <span class="hljs-literal">true</span> <span class="hljs-keyword">else</span> (<span class="hljs-built_in">odd</span> (x-<span class="hljs-number">1</span>))
+     <span class="hljs-built_in">odd</span>(x) = <span class="hljs-keyword">if</span> zero?(x) <span class="hljs-keyword">then</span> <span class="hljs-literal">false</span> <span class="hljs-keyword">else</span> (<span class="hljs-built_in">even</span> (x-<span class="hljs-number">1</span>))
+<span class="hljs-keyword">in</span> (<span class="hljs-built_in">odd</span> <span class="hljs-number">99</span>)
+</code></pre>
+<h2 id="concrete-syntax">Concrete Syntax</h2>
+<p>Rec introduces the concrete syntax in bold, the rest is from PROC and LET</p>
+<p> ⟨Expression⟩ ::= ⟨Number⟩<br>
+ ⟨Expression⟩ ::= ⟨Identifier⟩<br>
+ ⟨Expression⟩ ::= ⟨Expression⟩⟨BOp⟩⟨Expression⟩<br>
+ ⟨Expression⟩ ::= zero?(⟨Expression⟩)<br>
+ ⟨Expression⟩ ::= if⟨Expression⟩then⟨Expression⟩else⟨Expression⟩<br>
+ ⟨Expression⟩ ::= let⟨Identifier⟩=⟨Expression⟩in⟨Expression⟩<br>
+ ⟨Expression⟩ ::= (⟨Expression⟩)<br>
+ ⟨Expression⟩ ::= proc(⟨Identifier⟩){⟨Expression⟩}<br>
+ ⟨Expression⟩ ::= (⟨Expression⟩⟨Expression⟩)<br>
+ <strong>⟨Expression⟩ ::= letrec{⟨Identifier⟩(⟨Identifier⟩)=⟨Expression⟩}+ in⟨Expression⟩</strong>
+ ⟨BOp⟩ ::= +|-|*|/</p>
+<p>Note the curly braces in the production for <code>&lt;Expression&gt;</code> are not terminals, they just indicate that a sequence of terminals and nonterminals (in this case <code>⟨Identifier⟩(⟨Identifier⟩)=⟨Expression⟩</code>) will occur atleast once.</p>
+<h2 id="abstract-syntax">Abstract Syntax</h2>
+<p>The abstract syntax for REC is as follows, new additions are bolded.</p>
+<p>type expr = <br>
+   | Var of string<br>
+   | Int of int<br>
+   | Add of expr*expr<br>
+   | Sub of expr*expr<br>
+   | Mul of expr*expr<br>
+   | Div of expr*expr<br>
+   | Let of string*expr*expr<br>
+   | IsZero of expr<br>
+   | ITE of expr*expr*expr<br>
+   | Proc of string*texpr option*expr<br>
+   | App of expr*expr<br>
+  <strong>| Letrec of rdecs*expr</strong><br>
+and
+  <strong> rdecs = (string<em>string</em>texpr option<em>texpr option</em>expr) list</strong></p>
+<p>Parsing the expression below</p>
+<pre><code class="lang-ocaml">letrec <span class="hljs-built-in">fact</span>(x) =
+   <span class="hljs-keyword">if</span> zero?(x)
+   <span class="hljs-keyword">then</span> <span class="hljs-number">1</span>
+   <span class="hljs-keyword">else</span> x * (<span class="hljs-built-in">fact</span> (x<span class="hljs-number">-1</span>))
+ in (<span class="hljs-built-in">fact</span> <span class="hljs-number">5</span>)
+</code></pre>
+<p>will result in this AST (<code>None</code> can be ignored for now)</p>
+<pre><code class="lang-ocaml">AProg ([],
+ Letrec
+ ([(<span class="hljs-string">"fact"</span>, <span class="hljs-string">"x"</span>, None, None,
+   ITE (<span class="hljs-name">IsZero</span> (<span class="hljs-name">Var</span> <span class="hljs-string">"x"</span>), Int <span class="hljs-number">1</span>,
+     Mul (<span class="hljs-name">Var</span> <span class="hljs-string">"x"</span>, App (<span class="hljs-name">Var</span> <span class="hljs-string">"fact"</span>, Sub (<span class="hljs-name">Var</span> <span class="hljs-string">"x"</span>, Int <span class="hljs-number">1</span>)))))],
+   App (<span class="hljs-name">Var</span> <span class="hljs-string">"fact"</span>, Int <span class="hljs-number">5</span>)))
+</code></pre>
+<p>REC introduces the following new rules below on top of everything in PROC and LET</p>
+<h2 id="interpreter">Interpreter</h2>
+<p>Recursive functions will be represented as special closures called recursion closures
+A <strong>recursion closure</strong> is a closure with the tag <em>r</em> to distinguish it from a normal closure. Written (<code>id</code>, <code>e</code>, <code>p</code>)ʳ where </p>
+<p> <em>e</em> ∈ <em>EXP</em>, <em>id</em> ∈ <em>ID</em> and <em>ρ</em> ∈ <em>ENV</em><br>
+The set of all recursion closures is <em>RCL</em></p>
+<p><em>ENV </em>:= <em>ID</em>⇀(<em>EV</em>∪<em>RCL</em>)<br>
+<em>EV</em>:= <em>Z</em>∪<em>B</em>∪<em>CL</em><br>
+ <em>CL</em> := {(<em>id</em>,<em>e</em>,<em>ρ</em>) | <em>e</em> ∈ <em>EXP</em>,<em>id</em> ∈ <em>ID</em>,<em>ρ</em> ∈ <em>ENV</em>}<br>
+ RCL := {(<em>id</em>,<em>e</em>,<em>ρ</em>)ʳ | <em>e</em> ∈ <em>EXP</em>,<em>id</em> ∈ <em>ID</em>,<em>ρ</em> ∈ <em>ENV</em>}</p><br>
+<p>Recursion closures are not expressed values, so you can&#39;t write a program that when evaluated returns a recursion closure, they just help define evaluating recursive programs.</p>
+<p>Recursive function definitions will be stored as recursion closures, though they will produce normal closures, which are produced on the fly.</p>
+<h3 id="specification">Specification</h3>
+<p>The set of results and evaluation judgements in RET is the same as PROC</p>
+<p>These are <em>R</em> := <em>EV</em> U {<em>error</em>} and <em>e</em>,<em>p</em>⇓<em>r</em> where <em>r</em>  ∈ <em>R</em> respectively.</p>
+        <img src="./images4963/5.png" alt="">
+<p>Evaluation rules for REC is PROC and the ones above. 
+<code>ELetRec</code> created a recursion closure and adds it to the current environment <em>p</em>, and continues with the evaluation of <em>e2</em>. 
+The rule <code>EVarLetRec</code> looks up identifiers that refer to previously declared recursive functions, and once finding the corresponding one in the current environment, it creates a new closure and returns it. The new closure includes an environment that has a reference to <code>f</code> itself.</p>
+<h3 id="implementation">Implementation</h3>
+<p>Recursion closures are implemented by adding a new constructor <code>ExtendEnvRec</code> to type <code>expr</code></p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">type</span> exp_val = 
+ | <span class="hljs-type">NumVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">int</span>
+ | <span class="hljs-type">BoolVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">bool</span>
+ | <span class="hljs-type">ProcVal</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">string</span>*<span class="hljs-built_in">expr</span>*env
+<span class="hljs-keyword">and</span>
+ env =
+ | <span class="hljs-type">EmptyEnv</span>
+ | <span class="hljs-type">ExtendEnv</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">string</span>*exp_val*env
+ | <span class="hljs-type">ExtendEnvRec</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">string</span>*<span class="hljs-built_in">string</span>*<span class="hljs-built_in">expr</span>*env
+</code></pre>
+<p><code>ExtendEnvRec</code>&#39;s args are as follows, the name of the recursive function being defined <code>id</code>, the name of the formal parameter <code>par</code>, the body of the recursive function <code>body</code>, and the environment <code>env</code>.</p>
+<p>In the environment ρ ⊕ {id :=(par,e1,ρ)ʳ} in the rule <code>ELetRec</code>, we are missing an argument. This is correct, the ⊕ operator in the evaluation rule is modeled by <code>ExtendEnvRec</code>, in our implementation, though we don&#39;t need to store <em>p</em> because it is just the tail of the environment.</p>
+<p>We also need an operation similar to <code>extend_env</code> but adds a new recursive closure</p>
+<pre><code class="lang-ocaml">let extend_env_rec : string-&gt; string-&gt; expr-&gt; env ea_result =
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">id</span></span> par body-&gt;
+ <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">env</span></span>-&gt; Ok (ExtendEnvRec(id,par,body,env))
+</code></pre>
+<p>We also need to update the implementation of <code>apply_env</code> to have the <code>ExtendEnvRec</code> clause</p>
+<pre><code class="lang-ocaml"><span class="hljs-keyword">let</span> rec apply_env : string-&gt; exp_val ea_result =
+   <span class="hljs-keyword">fun</span> id-&gt;
+   <span class="hljs-keyword">fun</span> env-&gt;
+   <span class="hljs-keyword">match</span> env <span class="hljs-built_in">with</span>
+   | <span class="hljs-type">EmptyEnv</span>-&gt; Error (id^<span class="hljs-string">" not found!"</span>)
+   | <span class="hljs-type">ExtendEnv</span>(v,ev,tail)-&gt;
+     <span class="hljs-keyword">if</span> id=v
+     <span class="hljs-keyword">then</span> Ok ev
+     <span class="hljs-keyword">else</span> apply_env id tail
+   | <span class="hljs-type">ExtendEnvRec</span>(v,par,body,tail)-&gt;
+     <span class="hljs-keyword">if</span> id=v
+     <span class="hljs-keyword">then</span> Ok (ProcVal (par,body,env))
+     <span class="hljs-keyword">else</span> apply_env id tail
+</code></pre>
+<p>Lastly, we add a new clause to the interpreter for <code>Letrec(id, par, e1, e2)</code></p>
+<pre><code class="lang-ocaml">| <span class="hljs-type">Letrec</span>([(id,par,<span class="hljs-keyword">_</span>,<span class="hljs-keyword">_</span>,e1)],e2)-&gt;
+ extend_env_rec id par e1 &gt;&gt;+
+ eval_expr e2
+</code></pre>
+
     </main>
   </body>
 </html>
