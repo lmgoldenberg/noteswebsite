@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>CS Notes</title>
+    <title>CS 392 - Chapter 3</title>
+    <link rel="stylesheet" href="../public/css/notes.css">
   </head>
   <body>
     <main>
@@ -138,7 +139,7 @@ The minimal size of a block is 4*<code>sizeof(void*)</code> which on a 64-bit ma
 <p>To reuse a free chunk for <code>malloc()</code>, the double linked list must be traversed to find a block with a large enough size. It is possible that we allocated a lot of small blocks and freed them all. This would cause <code>malloc()</code> to be unable to find a larger block if needed. This problem is called <strong>external fragmentation</strong>, it&#39;s solution is <strong>coalescing</strong>, which is to merge adjacent freed blocks into 1 large block.</p>
 <p>Coalescing can be done when freeing a block, by checking whether it is next to other freed blocks, and if so merge them. This is called <strong>Immedieate Coalescing</strong></p>
 <p>Coalescing can also be done when searching for a freed block, and we end up finding two blocks located next to each other in memory, and then merging them together. This is called <strong>Deferred Coalescing</strong></p>
-
     </main>
+    <footer><p id="footer_text">CS 392 - <a href="./1.html">Chapter 1</a> | <a href="./2.html">Chapter 2</a> | Chapter 3 | <a href="./4.html">Chapter 4</a> | <a href="./5.html">Chapter 5</a> | <a href="./6.html">Chapter 6</a> | <a href="./7.html">Chapter 7</a> - <a href="../index.html">Home</a></p></footer>
   </body>
 </html>

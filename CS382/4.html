@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>CS Notes</title>
+    <title>CS 382 - Chapter 4</title>
+    <link rel="stylesheet" href="../public/css/notes.css">
   </head>
   <body>
     <main>
@@ -114,7 +115,6 @@ So we go to memory and grab <code>M[0b0000]</code> and <code>M[0b0001]</code>, w
 <p>The reason why we copied <code>M[0110]</code> and not <code>M[1000]</code> is because the last bit is the block offset and <code>M[0111]</code> is occupying the block offset at 1, so we copy a value with the same tag and set index but at a block offset of 0.</p>
 <p>Next is <code>0b1000</code>. It has a set index of <code>0b00</code> so we go to set 00 and compare the tags. Since both of the tags of the values in set 00 are 0, and <code>0b1000</code> has a tag of 1, we have a miss. So we go to main memory, copy <code>M[0b1000</code> and <code>M[0b1001</code> to the cache.</p>
 <p>Lastly is <code>0b0000</code> again. So we index to set 00, compare the tags and notice the tag is now 1, so we have a miss. So we must go to memory, copy <code>M[0b0000</code> and <code>M[0b0001</code> again and overwrite the values in set 00 and update the tag.</p>
-<p>ngl im skipping real world example bc its the same stuff, if you don&#39;t understand direct mapped caches see 4.2.3.3 in the textbook for a real world example</p>
 <img src="./images3824/9.png" alt="img id 9, if you see this msg email me with the class & chapter it was found in!">
 <img src="./images3824/10.png" alt="img id 10, if you see this msg email me with the class & chapter it was found in!">
 <p><strong>Associative Cache</strong></p>
@@ -289,5 +289,6 @@ First 32 pages of TLB are shown below in table 4.3</p>
 <p>Visit the cache using the parameters generated in the previous step, and determine if we have a cache hit or miss. If we have a hit (in this example we do), the byte is brought back to the CPU and stored in <code>W0</code>,</p>
 <p>If we had a miss, we&#39;d have to go to memory, evict the line with tag <code>0x1E</code> in set 7, and write the line in cache back to memory assuming we are using write-allocate protocol, and copy the line we want to cache.</p>
 </main>
+  <footer><p id="footer_text">CS 382 - <a href="./1.html">Chapter 1</a> | <a href="./2.html">Chapter 2</a> | <a href="./3.html">Chapter 3</a> | Chapter 4 - <a href="../index.html">Home</a></p></footer>
   </body>
 </html>
